@@ -80,6 +80,10 @@ async function initDashboard() {
     if (user) {
         document.getElementById('user-email').textContent = user.email;
         document.getElementById('user-tier').textContent = `${user.tier} PLAN`;
+        if (user.role === 'ADMIN') {
+            const adminLink = document.getElementById('admin-link');
+            if (adminLink) adminLink.classList.remove('hidden');
+        }
     }
 
     await fetchKeys();

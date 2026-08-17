@@ -16,11 +16,18 @@ enum Tier {
   PRO
 }
 
+enum Role {
+  USER
+  ADMIN
+}
+
 model User {
   id           String    @id @default(uuid())
   email        String    @unique
   passwordHash String
   tier         Tier      @default(FREE)
+  role         Role      @default(USER)
+  isBanned     Boolean   @default(false)
   createdAt    DateTime  @default(now())
   apiKeys      ApiKey[]
 }
@@ -32,4 +39,12 @@ model ApiKey {
   user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   lastUsed  DateTime?
+}
+
+model TierConfig {
+  id           String   @id @default(uuid())
+  tierName     String   @unique
+  requestLimit Int
+  windowMs     Int
+  updatedAt    DateTime @updatedAt
 }

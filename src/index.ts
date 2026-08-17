@@ -8,6 +8,7 @@ import authRoutes from './routes/auth';
 import apiKeyRoutes from './routes/apiKeys';
 import metricsRoutes from './routes/metrics';
 import dataRoutes from './routes/data';
+import adminRoutes from './routes/admin';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/keys', apiKeyRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/data', dataRoutes); // The protected route
+app.use('/api/admin', adminRoutes); // Admin routes
 
 // Fallback to index.html for unknown routes
 app.get('*', (req, res) => {

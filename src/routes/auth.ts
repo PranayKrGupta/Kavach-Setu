@@ -22,7 +22,7 @@ router.post('/register', async (req, res) => {
       });
 
       const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-      res.json({ token, user: { id: user.id, email: user.email, tier: user.tier } });
+      res.json({ token, user: { id: user.id, email: user.email, tier: user.tier, role: user.role } });
     } catch (err: any) {
       if (err.code === 'P2002') {
         return res.status(400).json({ error: 'User already exists' });
@@ -45,7 +45,7 @@ router.post('/login', async (req, res) => {
     if (!valid) return res.status(400).json({ error: 'Invalid credentials' });
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-    res.json({ token, user: { id: user.id, email: user.email, tier: user.tier } });
+    res.json({ token, user: { id: user.id, email: user.email, tier: user.tier, role: user.role } });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Internal server error' });

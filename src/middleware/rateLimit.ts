@@ -4,10 +4,13 @@ import { RequestLog } from '../models/RequestLog';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-const TIER_LIMITS = {
-  FREE: 60, // 60 requests per minute
-  PRO: 1000 // 1000 requests per minute
-};
+interface TierConfigCache {
+  requestLimit: number;
+  windowMs: number;
+  expiresAt: number;
+}
+
+const tierCache = new Map<string, TierConfigCache>();
 
 export const rateLimiter = async (req: Request, res: Response, next: NextFunction) => {
   const rawKey = req.headers['x-api-key'] as string;
@@ -31,6 +34,10 @@ export const rateLimiter = async (req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ error: 'Invalid API key' });
     }
 
+    if (apiKeyRecord.user.isBanned) {
+      return res.status(403).json({ error: 'Forbidden: User is banned' });
+    }
+
     const hash = crypto.createHash('sha256').update(secret).digest('hex');
     const isValid = hash === apiKeyRecord.keyHash;
 
@@ -38,13 +45,35 @@ export const rateLimiter = async (req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ error: 'Invalid API key' });
     }
 
-    const tier = apiKeyRecord.user.tier as 'FREE' | 'PRO';
-    const limit = TIER_LIMITS[tier] || TIER_LIMITS.FREE;
-    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const tier = apiKeyRecord.user.tier;
+    let limit = 60; // Default fallback
+    let windowMs = 60000;
+
+    const now = Date.now();
+    let cachedTier = tierCache.get(tier);
+
+    if (!cachedTier || cachedTier.expiresAt < now) {
+      const dbConfig = await prisma.tierConfig.findUnique({ where: { tierName: tier } });
+      if (dbConfig) {
+        cachedTier = {
+          requestLimit: dbConfig.requestLimit,
+          windowMs: dbConfig.windowMs,
+          expiresAt: now + 5 * 60 * 1000 // 5 minutes
+        };
+        tierCache.set(tier, cachedTier);
+      }
+    }
+
+    if (cachedTier) {
+      limit = cachedTier.requestLimit;
+      windowMs = cachedTier.windowMs;
+    }
+
+    const windowStart = new Date(now - windowMs);
 
     const requestCount = await RequestLog.countDocuments({
       apiKeyId: keyId,
-      timestamp: { $gte: oneMinuteAgo }
+      timestamp: { $gte: windowStart }
     });
 
     if (requestCount >= limit) {
