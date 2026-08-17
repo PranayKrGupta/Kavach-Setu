@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Gateway Portal - Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            bg: '#0f172a',
+                            panel: '#1e293b',
+                            border: '#334155',
+                            text: '#f8fafc',
+                            muted: '#94a3b8'
+                        },
+                        primary: {
+                            DEFAULT: '#3b82f6',
+                            hover: '#2563eb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: theme('colors.dark.bg'); color: theme('colors.dark.text'); font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-dark-panel border border-dark-border rounded-xl shadow-2xl p-8 space-y-6">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-white tracking-tight">API Gateway</h1>
+            <p class="text-dark-muted mt-2">Sign in to manage your keys & metrics</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex rounded-lg bg-slate-800 p-1">
+            <button id="tab-login" class="flex-1 py-2 text-sm font-medium rounded-md bg-dark-panel text-white shadow" onclick="switchTab('login')">Login</button>
+            <button id="tab-register" class="flex-1 py-2 text-sm font-medium rounded-md text-dark-muted hover:text-white" onclick="switchTab('register')">Register</button>
+        </div>
+
+        <div id="error-msg" class="hidden"></div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="space-y-4" onsubmit="handleAuth(event, 'login')">
+            <div>
+                <label class="block text-sm font-medium text-dark-muted mb-1">Email</label>
+                <input type="email" id="login-email" required class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-dark-muted mb-1">Password</label>
+                <input type="password" id="login-password" required class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
+            </div>
+            <button type="submit" class="w-full py-2 px-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors">Sign In</button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="space-y-4 hidden" onsubmit="handleAuth(event, 'register')">
+            <div>
+                <label class="block text-sm font-medium text-dark-muted mb-1">Email</label>
+                <input type="email" id="register-email" required class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-dark-muted mb-1">Password</label>
+                <input type="password" id="register-password" required class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-dark-muted mb-1">Plan Tier</label>
+                <select id="register-tier" class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
+                    <option value="FREE">Free (60 req/min)</option>
+                    <option value="PRO">Pro (1000 req/min)</option>
+                </select>
+            </div>
+            <button type="submit" class="w-full py-2 px-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors">Create Account</button>
+        </form>
+    </div>
+
+    <script src="/app.js"></script>
+    <script>
+        if (localStorage.getItem('token')) {
+            window.location.href = '/dashboard.html';
+        }
+    </script>
+</body>
+</html>
