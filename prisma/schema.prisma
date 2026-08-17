@@ -46,5 +46,6 @@ model TierConfig {
   tierName     String   @unique
   requestLimit Int
   windowMs     Int
+  maxApiKeys   Int      @default(2)
   updatedAt    DateTime @updatedAt
 }

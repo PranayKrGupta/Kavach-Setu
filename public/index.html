@@ -84,6 +84,8 @@
     <script>
         if (localStorage.getItem('token')) {
             window.location.href = '/dashboard.html';
+        } else {
+            fetchPublicTiers();
         }
     </script>
 </body>

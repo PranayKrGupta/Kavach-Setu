@@ -7,21 +7,23 @@ async function main() {
   // 1. Seed Dynamic Tier Configurations
   await prisma.tierConfig.upsert({
     where: { tierName: 'FREE' },
-    update: {},
+    update: { maxApiKeys: 2 },
     create: {
       tierName: 'FREE',
       requestLimit: 60,
-      windowMs: 60000 // 1 minute
+      windowMs: 60000, // 1 minute
+      maxApiKeys: 2
     }
   });
 
   await prisma.tierConfig.upsert({
     where: { tierName: 'PRO' },
-    update: {},
+    update: { maxApiKeys: 5 },
     create: {
       tierName: 'PRO',
       requestLimit: 1000,
-      windowMs: 60000 // 1 minute
+      windowMs: 60000, // 1 minute
+      maxApiKeys: 5
     }
   });
 

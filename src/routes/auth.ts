@@ -52,4 +52,16 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/tiers', async (req, res) => {
+  try {
+    const configs = await prisma.tierConfig.findMany({
+      orderBy: { requestLimit: 'asc' }
+    });
+    res.json({ configs });
+  } catch (err) {
+    console.error('Fetch public tiers error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

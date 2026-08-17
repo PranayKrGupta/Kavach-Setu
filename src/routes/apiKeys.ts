@@ -11,6 +11,24 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
   if (!userId) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { tier: true, isBanned: true, _count: { select: { apiKeys: true } } }
+    });
+
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (user.isBanned) return res.status(403).json({ error: 'Your account is banned. You cannot generate API keys.' });
+
+    const tierConfig = await prisma.tierConfig.findUnique({
+      where: { tierName: user.tier }
+    });
+
+    const maxKeys = tierConfig?.maxApiKeys ?? 2;
+
+    if (user._count.apiKeys >= maxKeys) {
+      return res.status(403).json({ error: `You have reached the maximum number of API keys (${maxKeys}) for the ${user.tier} tier.` });
+    }
+
     const rawSecret = crypto.randomBytes(32).toString('hex');
     const keyHash = crypto.createHash('sha256').update(rawSecret).digest('hex');
 

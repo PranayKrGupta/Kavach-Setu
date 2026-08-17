@@ -32,6 +32,34 @@ function switchTab(tab) {
         registerForm.classList.remove('hidden');
         tabRegister.className = 'flex-1 py-2 text-sm font-medium rounded-md bg-dark-panel text-white shadow';
         tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-md text-dark-muted hover:text-white';
+        fetchPublicTiers();
+    }
+}
+
+async function fetchPublicTiers() {
+    const select = document.getElementById('register-tier');
+    if (!select) return;
+
+    try {
+        const res = await fetch(`${API_URL}/auth/tiers`);
+        if (!res.ok) return;
+        const { configs } = await res.json();
+
+        if (configs && configs.length > 0) {
+            select.innerHTML = '';
+            configs.forEach(config => {
+                const option = document.createElement('option');
+                option.value = config.tierName;
+                const windowStr = config.windowMs >= 60000 
+                    ? `${Math.round(config.windowMs / 60000)}min` 
+                    : `${config.windowMs / 1000}s`;
+                const tierTitle = config.tierName.charAt(0) + config.tierName.slice(1).toLowerCase();
+                option.textContent = `${tierTitle} (${config.requestLimit} req/${windowStr})`;
+                select.appendChild(option);
+            });
+        }
+    } catch (err) {
+        console.error('Failed to fetch dynamic tiers:', err);
     }
 }
 
@@ -76,13 +104,30 @@ function logout() {
 let metricsChartInstance = null;
 
 async function initDashboard() {
-    const user = JSON.parse(localStorage.getItem('user'));
+    let user = JSON.parse(localStorage.getItem('user'));
+    
+    // Sync with backend to get latest tier/role
+    try {
+        const res = await fetch(`${API_URL}/user/me`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            user = data.user;
+            localStorage.setItem('user', JSON.stringify(user));
+        }
+    } catch (e) {
+        console.error('Failed to sync user data', e);
+    }
+
     if (user) {
         document.getElementById('user-email').textContent = user.email;
         document.getElementById('user-tier').textContent = `${user.tier} PLAN`;
+        const adminLink = document.getElementById('admin-link');
         if (user.role === 'ADMIN') {
-            const adminLink = document.getElementById('admin-link');
             if (adminLink) adminLink.classList.remove('hidden');
+        } else {
+            if (adminLink) adminLink.classList.add('hidden');
         }
     }
 
@@ -112,7 +157,7 @@ async function fetchKeys() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-dark-muted">${new Date(key.createdAt).toLocaleString()}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-dark-muted">${key.lastUsed ? new Date(key.lastUsed).toLocaleString() : 'Never'}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
-                    <button onclick="deleteApiKey('${key.id}')" class="text-red-400 hover:text-red-300 transition-colors">Delete</button>
+                    <button onclick="deleteApiKey('${key.id}')" class="text-red-400 hover:text-red-300 transition-colors">Revoke</button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -287,5 +332,82 @@ async function testApi() {
         setTimeout(fetchKeys, 500);
     } catch (err) {
         resultBox.textContent = `Error: ${err.message}`;
+    }
+}
+
+// Account Settings Functions
+async function updateEmail(event) {
+    event.preventDefault();
+    const newEmail = document.getElementById('new-email').value;
+    const currentPassword = document.getElementById('email-password').value;
+
+    try {
+        const res = await fetch(`${API_URL}/user/email`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}` 
+            },
+            body: JSON.stringify({ newEmail, currentPassword })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        localStorage.setItem('user', JSON.stringify(data.user));
+        document.getElementById('user-email').textContent = data.user.email;
+        document.getElementById('email-password').value = '';
+        alert('Email updated successfully!');
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+async function updatePassword(event) {
+    event.preventDefault();
+    const newPassword = document.getElementById('new-password').value;
+    const currentPassword = document.getElementById('password-password').value;
+
+    try {
+        const res = await fetch(`${API_URL}/user/password`, {
+            method: 'PATCH',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}` 
+            },
+            body: JSON.stringify({ newPassword, currentPassword })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        document.getElementById('new-password').value = '';
+        document.getElementById('password-password').value = '';
+        alert('Password updated successfully!');
+    } catch (err) {
+        alert(err.message);
+    }
+}
+
+async function deleteAccount(event) {
+    event.preventDefault();
+    const currentPassword = document.getElementById('delete-password').value;
+    
+    if (!confirm('Are you ABSOLUTELY sure? This will revoke all API keys and permanently delete your account.')) return;
+
+    try {
+        const res = await fetch(`${API_URL}/user/account`, {
+            method: 'DELETE',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}` 
+            },
+            body: JSON.stringify({ currentPassword })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+
+        alert('Account deleted successfully.');
+        logout();
+    } catch (err) {
+        alert(err.message);
     }
 }

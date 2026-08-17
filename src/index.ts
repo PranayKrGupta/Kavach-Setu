@@ -9,6 +9,7 @@ import apiKeyRoutes from './routes/apiKeys';
 import metricsRoutes from './routes/metrics';
 import dataRoutes from './routes/data';
 import adminRoutes from './routes/admin';
+import userRoutes from './routes/user';
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api/keys', apiKeyRoutes);
 app.use('/api/metrics', metricsRoutes);
 app.use('/api/data', dataRoutes); // The protected route

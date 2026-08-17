@@ -74,6 +74,10 @@ async function fetchConfigs() {
                         <input type="number" id="window-${config.id}" value="${config.windowMs}" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
                         <p class="text-xs text-slate-500 mt-1">${config.windowMs / 1000} seconds</p>
                     </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Max API Keys</label>
+                        <input type="number" id="keys-${config.id}" value="${config.maxApiKeys || 2}" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
+                    </div>
                 </div>
                 
                 <button onclick="updateConfig('${config.id}')" class="mt-4 w-full py-2 bg-slate-700 hover:bg-primary text-white text-sm font-semibold rounded-md transition-colors duration-200 shadow-sm flex justify-center items-center">
@@ -90,12 +94,13 @@ async function fetchConfigs() {
 async function updateConfig(id) {
     const limit = document.getElementById(`limit-${id}`).value;
     const windowMs = document.getElementById(`window-${id}`).value;
+    const maxApiKeys = document.getElementById(`keys-${id}`).value;
     
     try {
         const res = await fetch(`${API_URL}/config/tiers/${id}`, {
             method: 'PATCH',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ requestLimit: limit, windowMs })
+            body: JSON.stringify({ requestLimit: limit, windowMs, maxApiKeys })
         });
         
         const data = await res.json();
@@ -108,6 +113,8 @@ async function updateConfig(id) {
     }
 }
 
+let lastUsersStr = '';
+
 // Fetch and Render Users
 async function fetchUsers() {
     try {
@@ -115,6 +122,10 @@ async function fetchUsers() {
         if (!res.ok) throw new Error('Failed to fetch users');
         const data = await res.json();
         
+        const newStr = JSON.stringify(data.users);
+        if (newStr === lastUsersStr && document.getElementById('users-tbody').children.length > 0) return;
+        lastUsersStr = newStr;
+
         document.getElementById('user-count-badge').textContent = `${data.users.length} Users Total`;
         
         const tbody = document.getElementById('users-tbody');
@@ -160,6 +171,10 @@ async function fetchUsers() {
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
+                    <select onchange="updateRole('${u.id}', this.value)" class="bg-slate-900 border border-slate-700 text-slate-300 text-sm rounded focus:ring-primary focus:border-primary block p-2 cursor-pointer font-semibold outline-none transition-colors mb-2" ${isBanned ? 'disabled' : ''}>
+                        <option value="USER" ${u.role === 'USER' ? 'selected' : ''}>USER</option>
+                        <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
+                    </select>
                     <select onchange="updateTier('${u.id}', this.value)" class="bg-slate-900 border ${u.tier === 'PRO' ? 'border-amber-500/50 text-amber-300' : 'border-slate-700 text-slate-300'} text-sm rounded focus:ring-primary focus:border-primary block p-2 cursor-pointer font-semibold outline-none transition-colors" ${isBanned ? 'disabled' : ''}>
                         <option value="FREE" ${u.tier === 'FREE' ? 'selected' : ''}>FREE</option>
                         <option value="PRO" ${u.tier === 'PRO' ? 'selected' : ''}>PRO</option>
@@ -190,6 +205,25 @@ async function updateTier(userId, tier) {
         if (!res.ok) throw new Error(data.error || 'Failed to update tier');
         
         showAlert('User tier updated successfully.');
+        fetchUsers();
+    } catch (error) {
+        showAlert(error.message, true);
+        fetchUsers(); // reset select
+    }
+}
+
+async function updateRole(userId, role) {
+    try {
+        const res = await fetch(`${API_URL}/users/${userId}/role`, {
+            method: 'PATCH',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ role })
+        });
+        
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update role');
+        
+        showAlert('User role updated successfully.');
         fetchUsers();
     } catch (error) {
         showAlert(error.message, true);

@@ -2,12 +2,28 @@ import { Router } from 'express';
 import { prisma } from '../db';
 import { authenticateToken } from '../middleware/auth';
 import { isAdmin } from '../middleware/isAdmin';
-import { Tier } from '@prisma/client';
+import { Tier, Role } from '@prisma/client';
 
 const router = Router();
 
 // Secure all admin routes
 router.use(authenticateToken, isAdmin);
+
+async function checkLastAdmin(targetUserId: string) {
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { role: true }
+  });
+
+  if (targetUser && targetUser.role === 'ADMIN') {
+    const adminCount = await prisma.user.count({
+      where: { role: 'ADMIN' }
+    });
+    if (adminCount <= 1) {
+      throw new Error('Cannot demote, ban, or delete the last remaining admin.');
+    }
+  }
+}
 
 // GET /api/admin/users: Fetch all users (excluding passwords) + API keys count
 router.get('/users', async (req, res) => {
@@ -50,14 +66,48 @@ router.patch('/users/:id/ban', async (req, res) => {
   }
 
   try {
+    if (isBanned) {
+      await checkLastAdmin(id);
+    }
     const user = await prisma.user.update({
       where: { id },
-      data: { isBanned },
-      select: { id: true, email: true, isBanned: true }
+      data: { 
+        isBanned,
+        ...(isBanned ? { role: 'USER' } : {}) 
+      },
+      select: { id: true, email: true, isBanned: true, role: true }
     });
-    res.json({ message: `User ${user.isBanned ? 'banned' : 'unbanned'} successfully`, user });
+    res.json({ message: `User ${user.isBanned ? 'banned (and demoted if Admin)' : 'unbanned'} successfully`, user });
   } catch (error) {
     console.error('Admin Ban User error:', error);
+    res.status(500).json({ error: 'Internal server error (User may not exist)' });
+  }
+});
+
+// PATCH /api/admin/users/:id/role: Update role
+router.patch('/users/:id/role', async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  if (role !== 'ADMIN' && role !== 'USER') {
+    return res.status(400).json({ error: 'Invalid role' });
+  }
+
+  try {
+    if (role === 'USER') {
+      await checkLastAdmin(id);
+    }
+    const user = await prisma.user.update({
+      where: { id },
+      data: { role },
+      select: { id: true, email: true, role: true }
+    });
+    res.json({ message: 'User role updated successfully', user });
+  } catch (error: any) {
+    if (error.message.includes('last remaining admin')) {
+      return res.status(403).json({ error: error.message });
+    }
+    console.error('Admin Update Role error:', error);
     res.status(500).json({ error: 'Internal server error (User may not exist)' });
   }
 });
@@ -100,14 +150,15 @@ router.get('/config/tiers', async (req, res) => {
 // PATCH /api/admin/config/tiers/:id: Update tier config
 router.patch('/config/tiers/:id', async (req, res) => {
   const { id } = req.params;
-  const { requestLimit, windowMs } = req.body;
+  const { requestLimit, windowMs, maxApiKeys } = req.body;
 
   try {
     const config = await prisma.tierConfig.update({
       where: { id },
       data: {
         ...(requestLimit !== undefined && { requestLimit: Number(requestLimit) }),
-        ...(windowMs !== undefined && { windowMs: Number(windowMs) })
+        ...(windowMs !== undefined && { windowMs: Number(windowMs) }),
+        ...(maxApiKeys !== undefined && { maxApiKeys: Number(maxApiKeys) })
       }
     });
     res.json({ message: 'Tier config updated successfully', config });
