@@ -23,7 +23,7 @@ Kavach Setu is a production-ready, modular Developer API Gateway and Metrics Das
 
 Ensure you have the following installed before setting up the project:
 - [Node.js](https://nodejs.org/en/) (v18 or higher)
-- [PostgreSQL](https://www.postgresql.org/) (Running instance)
+- [PostgreSQL](https://www.postgresql.org/) (Running instance or Supabase/Neon)
 - [MongoDB](https://www.mongodb.com/) (Running instance or MongoDB Atlas)
 - An [EmailJS](https://www.emailjs.com/) account for OTP dispatch
 
@@ -58,7 +58,26 @@ EMAILJS_PRIVATE_KEY=your_private_key
 
 *Note: You must enable "Allow EmailJS API for non-browser applications" in your EmailJS Security settings for the backend dispatch to work.*
 
-## 🚀 Installation & Setup
+## 🌐 Deploy to Render (Cloud)
+
+Kavach Setu is fully configured for seamless deployment on **Render**:
+
+### Option 1: Automatic Blueprint (Recommended)
+1. Go to [Render Dashboard](https://dashboard.render.com/) > **New +** > **Blueprint**.
+2. Connect your GitHub repository (`Kavach-Setu`).
+3. Render will read `render.yaml` and configure everything automatically.
+4. Fill in your environment variables (`DATABASE_URL`, `MONGO_URI`, `EMAILJS_*`, etc.) and click **Apply**.
+
+### Option 2: Manual Web Service
+1. **Create Web Service** on Render connected to your repository.
+2. **Runtime:** `Node`
+3. **Build Command:** `npm install && npm run build && npx prisma db push`
+4. **Start Command:** `npm start`
+5. **Environment Variables:** Add all variables from `.env.example` in the Render Environment tab.
+
+---
+
+## 🚀 Local Installation & Setup
 
 1. **Clone the repository and install dependencies:**
    ```bash

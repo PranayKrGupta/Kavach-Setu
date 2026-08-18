@@ -3,10 +3,16 @@
   "version": "1.0.0",
   "description": "Kavach Setu - Developer API Gateway and Metrics Portal",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "build": "tsc && npx prisma generate"
+    "build": "tsc && npx prisma generate",
+    "postinstall": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",
