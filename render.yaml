@@ -3,7 +3,7 @@ services:
     name: kavach-setu
     runtime: node
     plan: free
-    buildCommand: npm install && npm run build && npx prisma db push
+    buildCommand: npm install --include=dev && npm run build && npx prisma db push
     startCommand: npm start
     healthCheckPath: /health
     envVars:
