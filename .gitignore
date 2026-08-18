@@ -120,3 +120,6 @@ dist
 
 # Mac OS files
 .DS_Store
+
+# GitGuardian cache
+.cache_ggshield
