@@ -1,8 +1,9 @@
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
-import { connectMongo } from './db';
+import { env, validateEnv } from './config/env';
+import { connectMongo } from './config/database';
+import { errorHandler } from './middlewares/errorHandler';
 
 import authRoutes from './routes/auth';
 import apiKeyRoutes from './routes/apiKeys';
@@ -11,10 +12,9 @@ import dataRoutes from './routes/data';
 import adminRoutes from './routes/admin';
 import userRoutes from './routes/user';
 
-dotenv.config();
+validateEnv();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -22,23 +22,29 @@ app.use(express.json());
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '../public')));
 
-// API Routes
+// API Route Mappings
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/keys', apiKeyRoutes);
 app.use('/api/metrics', metricsRoutes);
-app.use('/api/data', dataRoutes); // The protected route
-app.use('/api/admin', adminRoutes); // Admin routes
+app.use('/api/data', dataRoutes);
+app.use('/api/admin', adminRoutes);
 
-// Fallback to index.html for unknown routes
-app.get('*', (req, res) => {
+// Fallback to index.html for non-API client routing
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
-const startServer = async () => {
+// Centralized Error Handling Middleware (must be registered after routes)
+app.use(errorHandler);
+
+const startServer = async (): Promise<void> => {
   await connectMongo();
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  app.listen(env.PORT, () => {
+    console.log(`[Kavach Setu] Server running on http://localhost:${env.PORT}`);
   });
 };
 

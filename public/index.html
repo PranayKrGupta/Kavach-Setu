@@ -1,23 +1,17 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Gateway Portal - Login</title>
+    <title>Kavach Setu - Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/style.css">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        dark: {
-                            bg: '#0f172a',
-                            panel: '#1e293b',
-                            border: '#334155',
-                            text: '#f8fafc',
-                            muted: '#94a3b8'
-                        },
                         primary: {
                             DEFAULT: '#3b82f6',
                             hover: '#2563eb'
@@ -27,57 +21,103 @@
             }
         }
     </script>
-    <style>
-        body { background-color: theme('colors.dark.bg'); color: theme('colors.dark.text'); font-family: 'Inter', sans-serif; }
-    </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-md bg-dark-panel border border-dark-border rounded-xl shadow-2xl p-8 space-y-6">
-        <div class="text-center">
-            <h1 class="text-3xl font-bold text-white tracking-tight">API Gateway</h1>
-            <p class="text-dark-muted mt-2">Sign in to manage your keys & metrics</p>
+<body class="theme-liquid-dark">
+    <!-- Centered Fullscreen Container -->
+    <div class="min-h-screen w-full flex items-center justify-center p-4">
+        <div class="w-full max-w-md glass-panel p-8 space-y-6 relative z-10">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold tracking-tight">Kavach Setu</h1>
+                <p class="opacity-70 mt-2">Sign in to manage your keys & metrics</p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex rounded-lg bg-black/20 border border-white/10 p-1">
+                <button id="tab-login" class="flex-1 py-2 text-sm font-medium rounded-md bg-white/10 text-white shadow transition" onclick="switchTab('login')">Login</button>
+                <button id="tab-register" class="flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 hover:text-white transition" onclick="switchTab('register')">Register</button>
+            </div>
+
+            <div id="error-msg" class="hidden"></div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="space-y-4" onsubmit="handleAuth(event, 'login')">
+                <div>
+                    <label class="block text-sm font-medium opacity-80 mb-1">Email</label>
+                    <input type="email" id="login-email" required class="w-full px-4 py-2.5 glass-input rounded-lg" placeholder="name@example.com">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium opacity-80 mb-1">Password</label>
+                    <input type="password" id="login-password" required class="w-full px-4 py-2.5 glass-input rounded-lg" placeholder="••••••••">
+                </div>
+                <button type="submit" class="w-full py-2.5 px-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors shadow-lg">Sign In</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="space-y-4 hidden" onsubmit="handleAuth(event, 'register')">
+                <div>
+                    <label class="block text-sm font-medium opacity-80 mb-1">Email</label>
+                    <input type="email" id="register-email" required class="w-full px-4 py-2.5 glass-input rounded-lg" placeholder="name@example.com">
+                </div>
+
+                <div id="register-step-1-btn">
+                    <button type="button" id="btn-send-register-otp" onclick="sendRegisterOtp()" class="w-full py-2.5 px-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors shadow-lg flex items-center justify-center">
+                        <span id="btn-send-otp-text">Send Verification Code</span>
+                    </button>
+                </div>
+
+                <div id="register-step-2" class="space-y-4 hidden border-t border-white/10 pt-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="block text-sm font-medium opacity-80">6-Digit Verification Code</label>
+                            <button type="button" onclick="sendRegisterOtp()" class="text-xs text-blue-400 hover:underline">Resend Code</button>
+                        </div>
+                        <input type="text" id="register-otp" maxlength="6" class="w-full px-4 py-2.5 glass-input rounded-lg font-mono text-center tracking-widest text-lg" placeholder="123456">
+                        <p class="text-[11px] opacity-60 mt-1">Check your inbox. Code expires in 10 minutes.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium opacity-80 mb-1">Password</label>
+                        <input type="password" id="register-password" minlength="6" class="w-full px-4 py-2.5 glass-input rounded-lg" placeholder="••••••••">
+                        <p class="text-xs opacity-60 mt-1">Min. 6 chars with letters, numbers & special symbols (!@#$).</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium opacity-80 mb-1">Plan Tier</label>
+                        <select id="register-tier" class="w-full px-4 py-2.5 glass-input rounded-lg cursor-pointer">
+                            <option value="FREE" class="bg-slate-800 text-white">Free (60 req/min)</option>
+                            <option value="PRO" class="bg-slate-800 text-white">Pro (1000 req/min)</option>
+                        </select>
+                    </div>
+                    <button type="submit" id="btn-complete-register" class="w-full py-2.5 px-4 bg-green-600 hover:bg-green-500 text-white font-semibold rounded-lg transition-colors shadow-lg">Complete Registration</button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Tabs -->
-        <div class="flex rounded-lg bg-slate-800 p-1">
-            <button id="tab-login" class="flex-1 py-2 text-sm font-medium rounded-md bg-dark-panel text-white shadow" onclick="switchTab('login')">Login</button>
-            <button id="tab-register" class="flex-1 py-2 text-sm font-medium rounded-md text-dark-muted hover:text-white" onclick="switchTab('register')">Register</button>
+    <!-- Floating Theme Switcher Button (Bottom-Right) -->
+    <button id="settings-fab" class="fixed bottom-6 right-6 z-50 p-4 rounded-full glass-panel flex items-center justify-center hover:scale-110 transition-transform cursor-pointer shadow-2xl" title="Change Theme">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+    </button>
+
+    <!-- Theme Popover (Bottom-Right) -->
+    <div id="settings-popover" class="fixed bottom-24 right-6 w-[320px] z-50 overflow-hidden hidden flex-col glass-panel p-5 shadow-2xl transition-all duration-200 opacity-0 transform scale-95">
+        <h3 class="text-sm font-bold uppercase tracking-wider mb-3 opacity-90">Select Theme</h3>
+        <div class="grid grid-cols-2 gap-2.5">
+            <button onclick="applyTheme('theme-liquid-dark')" data-theme="theme-liquid-dark" class="p-3 text-xs font-semibold rounded-lg border border-white/20 bg-[#0b0f19] text-white hover:border-cyan-400 transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
+                Liquid Dark
+            </button>
+            <button onclick="applyTheme('theme-liquid-light')" data-theme="theme-liquid-light" class="p-3 text-xs font-semibold rounded-lg border border-black/10 bg-[#f1f5f9] text-slate-800 hover:border-blue-500 transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                <span class="w-3 h-3 rounded-full bg-blue-600"></span>
+                Liquid Light
+            </button>
+            <button onclick="applyTheme('theme-solarized-dark')" data-theme="theme-solarized-dark" class="p-3 text-xs font-semibold rounded-lg border border-white/10 bg-[#002b36] text-[#839496] hover:border-[#2aa198] transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                <span class="w-3 h-3 rounded-full bg-[#2aa198]"></span>
+                Solar Dark
+            </button>
+            <button onclick="applyTheme('theme-solarized-light')" data-theme="theme-solarized-light" class="p-3 text-xs font-semibold rounded-lg border border-black/10 bg-[#fdf6e3] text-[#586e75] hover:border-[#268bd2] transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                <span class="w-3 h-3 rounded-full bg-[#268bd2]"></span>
+                Solar Light
+            </button>
         </div>
-
-        <div id="error-msg" class="hidden"></div>
-
-        <!-- Login Form -->
-        <form id="login-form" class="space-y-4" onsubmit="handleAuth(event, 'login')">
-            <div>
-                <label class="block text-sm font-medium text-dark-muted mb-1">Email</label>
-                <input type="email" id="login-email" required class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-dark-muted mb-1">Password</label>
-                <input type="password" id="login-password" required class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
-            </div>
-            <button type="submit" class="w-full py-2 px-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors">Sign In</button>
-        </form>
-
-        <!-- Register Form -->
-        <form id="register-form" class="space-y-4 hidden" onsubmit="handleAuth(event, 'register')">
-            <div>
-                <label class="block text-sm font-medium text-dark-muted mb-1">Email</label>
-                <input type="email" id="register-email" required class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-dark-muted mb-1">Password</label>
-                <input type="password" id="register-password" required class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-dark-muted mb-1">Plan Tier</label>
-                <select id="register-tier" class="w-full px-4 py-2 bg-slate-800 border border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-white">
-                    <option value="FREE">Free (60 req/min)</option>
-                    <option value="PRO">Pro (1000 req/min)</option>
-                </select>
-            </div>
-            <button type="submit" class="w-full py-2 px-4 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors">Create Account</button>
-        </form>
     </div>
 
     <script src="/app.js"></script>

@@ -1,27 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../db';
-import { RequestLog } from '../models/RequestLog';
-import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-
-interface TierConfigCache {
-  requestLimit: number;
-  windowMs: number;
-  expiresAt: number;
-}
+import { prisma } from '../config/database';
+import { RequestLog } from '../models/RequestLog';
+import { TierConfigCache } from '../types';
+import { AppError } from '../utils/appError';
 
 const tierCache = new Map<string, TierConfigCache>();
 
-export const rateLimiter = async (req: Request, res: Response, next: NextFunction) => {
-  const rawKey = req.headers['x-api-key'] as string;
-  if (!rawKey) {
-    return res.status(401).json({ error: 'x-api-key header is required' });
+export const rateLimiter = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  const rawKey = req.headers['x-api-key'];
+  if (!rawKey || typeof rawKey !== 'string') {
+    return next(new AppError('x-api-key header is required', 401));
   }
 
   try {
     const parts = rawKey.split('.');
     if (parts.length !== 2) {
-      return res.status(401).json({ error: 'Invalid API key format' });
+      return next(new AppError('Invalid API key format', 401));
     }
     const [keyId, secret] = parts;
 
@@ -31,22 +26,22 @@ export const rateLimiter = async (req: Request, res: Response, next: NextFunctio
     });
 
     if (!apiKeyRecord) {
-      return res.status(401).json({ error: 'Invalid API key' });
+      return next(new AppError('Invalid API key', 401));
     }
 
     if (apiKeyRecord.user.isBanned) {
-      return res.status(403).json({ error: 'Forbidden: User is banned' });
+      return next(new AppError('Forbidden: User is banned', 403));
     }
 
     const hash = crypto.createHash('sha256').update(secret).digest('hex');
     const isValid = hash === apiKeyRecord.keyHash;
 
     if (!isValid) {
-      return res.status(401).json({ error: 'Invalid API key' });
+      return next(new AppError('Invalid API key', 401));
     }
 
     const tier = apiKeyRecord.user.tier;
-    let limit = 60; // Default fallback
+    let limit = 60;
     let windowMs = 60000;
 
     const now = Date.now();
@@ -58,7 +53,7 @@ export const rateLimiter = async (req: Request, res: Response, next: NextFunctio
         cachedTier = {
           requestLimit: dbConfig.requestLimit,
           windowMs: dbConfig.windowMs,
-          expiresAt: now + 5 * 60 * 1000 // 5 minutes
+          expiresAt: now + 5 * 60 * 1000 // 5 minutes cache TTL
         };
         tierCache.set(tier, cachedTier);
       }
@@ -83,29 +78,34 @@ export const rateLimiter = async (req: Request, res: Response, next: NextFunctio
         status: 429,
         timestamp: new Date()
       });
-      return res.status(429).json({ error: 'Too Many Requests (Rate Limit Exceeded)' });
+      return next(new AppError('Too Many Requests (Rate Limit Exceeded)', 429));
     }
 
-    // Update lastUsed asynchronously to save time
-    prisma.apiKey.update({
-      where: { id: keyId },
-      data: { lastUsed: new Date() }
-    }).catch(err => console.error('Error updating lastUsed:', err));
+    // Update lastUsed asynchronously
+    prisma.apiKey
+      .update({
+        where: { id: keyId },
+        data: { lastUsed: new Date() }
+      })
+      .catch(() => {
+        // Non-blocking background update
+      });
 
     res.on('finish', () => {
       if (res.statusCode !== 429) {
-         RequestLog.create({
+        RequestLog.create({
           apiKeyId: keyId,
           endpoint: req.originalUrl,
           status: res.statusCode,
           timestamp: new Date()
-        }).catch(err => console.error('Failed to log request:', err));
+        }).catch(() => {
+          // Non-blocking background log
+        });
       }
     });
 
     next();
   } catch (error) {
-    console.error('Rate limiting error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    next(error);
   }
 };

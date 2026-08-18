@@ -1,16 +1,11 @@
 import { Router } from 'express';
-import { rateLimiter } from '../middleware/rateLimit';
+import { asyncHandler } from '../utils/asyncHandler';
+import { rateLimiter } from '../middlewares/rateLimiter';
+import { getProtectedData } from '../controllers/data.controller';
 
 const router = Router();
 
-router.get('/', rateLimiter, (req, res) => {
-  res.json({
-    message: 'Success! You have accessed the protected data route.',
-    data: {
-      timestamp: new Date().toISOString(),
-      randomValue: Math.floor(Math.random() * 1000)
-    }
-  });
-});
+// Protect sample endpoint with rate limiting
+router.get('/', rateLimiter, asyncHandler(getProtectedData));
 
 export default router;

@@ -33,11 +33,12 @@ model User {
 }
 
 model ApiKey {
-  id        String   @id @default(uuid())
-  keyHash   String   @unique
+  id        String    @id @default(uuid())
+  key       String?
+  keyHash   String    @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+  createdAt DateTime  @default(now())
   lastUsed  DateTime?
 }
 
