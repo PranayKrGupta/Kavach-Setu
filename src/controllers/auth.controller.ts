@@ -91,7 +91,7 @@ export async function register(req: Request, res: Response): Promise<void> {
       data: {
         email: normalizedEmail,
         passwordHash,
-        tier: tier === 'PRO' ? 'PRO' : 'FREE'
+        tier: 'FREE'
       }
     });
 

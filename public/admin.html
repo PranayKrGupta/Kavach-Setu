@@ -31,7 +31,10 @@
                 <div class="flex items-center space-x-3">
                     <img src="/logo.png" alt="Kavach Setu Logo" class="w-9 h-9 object-contain rounded-lg shadow-sm">
                     <span class="admin-badge border px-2.5 py-1 rounded-md text-xs font-extrabold tracking-widest uppercase">ADMIN</span>
-                    <h1 class="text-xl font-bold tracking-tight text-main">Kavach Setu Portal</h1>
+                    <h1 class="text-xl font-bold tracking-tight text-main flex items-center">
+                        Kavach Setu Portal
+                        <span id="pending-badge-nav" class="hidden ml-2.5 px-2 py-0.5 text-xs font-extrabold rounded-full bg-rose-500 text-white shadow-sm animate-pulse">0</span>
+                    </h1>
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="/dashboard.html" class="inline-flex items-center text-sm font-bold transition-colors btn-action-copy px-3.5 py-1.5 rounded-lg shadow-sm">
@@ -53,6 +56,46 @@
         <div id="alert-box" class="hidden rounded-xl p-4 mb-4 text-sm font-bold shadow-lg transition-all duration-300 transform translate-y-0 opacity-100">
             <span id="alert-msg"></span>
         </div>
+
+        <!-- Pending Upgrade Requests Section -->
+        <section class="glass-panel !p-0 shadow-lg flex flex-col overflow-hidden border border-amber-500/30">
+            <div class="p-6 modal-header-themed flex justify-between items-center bg-gradient-to-r from-amber-500/10 via-transparent to-transparent">
+                <div>
+                    <h2 class="text-xl font-bold flex items-center tracking-tight text-main">
+                        <span class="mr-2 text-xl">⭐</span>
+                        Pending Upgrade Requests
+                    </h2>
+                    <p class="text-sm text-muted mt-1 font-medium">Review and approve or decline user requests to upgrade to the PRO plan.</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="fetchUpgradeRequests()" class="p-2 btn-action-copy rounded-lg transition-colors flex items-center shadow-sm" title="Refresh Upgrade Requests">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </button>
+                    <div class="text-xs px-3.5 py-1.5 rounded-lg font-mono font-bold shadow-sm bg-amber-500/20 text-amber-400 border border-amber-500/30" id="upgrade-count-badge">
+                        0 Pending
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">User</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Current Tier</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Requested Date</th>
+                            <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider">Review Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="upgrade-requests-tbody">
+                        <!-- Injected dynamically -->
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-muted font-medium text-sm">Loading pending upgrade requests...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
         <!-- System Config Section -->
         <section class="glass-panel p-6 sm:p-8 relative overflow-hidden">

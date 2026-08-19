@@ -138,3 +138,93 @@ export async function updateTierConfig(req: Request, res: Response): Promise<voi
 
   ApiResponse.success(res, { config }, 200, 'Tier config updated successfully');
 }
+
+/**
+ * GET /api/admin/upgrade-requests
+ */
+export async function getPendingUpgradeRequests(_req: Request, res: Response): Promise<void> {
+  const requests = await prisma.upgradeRequest.findMany({
+    where: { status: 'PENDING' },
+    include: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          tier: true,
+          role: true,
+          createdAt: true
+        }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+
+  ApiResponse.success(res, { requests });
+}
+
+/**
+ * PATCH /api/admin/upgrade-requests/:id
+ */
+export async function handleUpgradeRequest(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  const { action } = req.body;
+
+  if (action !== 'APPROVE' && action !== 'REJECT') {
+    throw new AppError("Action must be either 'APPROVE' or 'REJECT'", 400);
+  }
+
+  const upgradeRequest = await prisma.upgradeRequest.findUnique({
+    where: { id },
+    include: { user: true }
+  });
+
+  if (!upgradeRequest) {
+    throw new AppError('Upgrade request not found', 404);
+  }
+
+  if (action === 'APPROVE') {
+    const [updatedRequest] = await prisma.$transaction([
+      prisma.upgradeRequest.update({
+        where: { id },
+        data: { status: 'APPROVED' }
+      }),
+      prisma.user.update({
+        where: { id: upgradeRequest.userId },
+        data: {
+          tier: 'PRO',
+          hasUnreadNotification: true,
+          lastNotificationMessage: 'Your request to upgrade to the PRO plan has been approved!'
+        }
+      })
+    ]);
+
+    ApiResponse.success(
+      res,
+      { request: updatedRequest },
+      200,
+      'Upgrade request approved successfully'
+    );
+  } else {
+    const [updatedRequest] = await prisma.$transaction([
+      prisma.upgradeRequest.update({
+        where: { id },
+        data: { status: 'REJECTED' }
+      }),
+      prisma.user.update({
+        where: { id: upgradeRequest.userId },
+        data: {
+          hasUnreadNotification: true,
+          lastNotificationMessage: 'Your request to upgrade to the PRO plan was declined.'
+        }
+      })
+    ]);
+
+    ApiResponse.success(
+      res,
+      { request: updatedRequest },
+      200,
+      'Upgrade request declined successfully'
+    );
+  }
+}
+

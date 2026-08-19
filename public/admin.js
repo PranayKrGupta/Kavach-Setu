@@ -18,6 +18,16 @@ function showAlert(msg, isError = false) {
     }, 4000);
 }
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function getAuthHeaders() {
     return {
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -35,9 +45,120 @@ async function initAdmin() {
     }
     
     await Promise.all([
+        fetchUpgradeRequests(),
         fetchConfigs(),
         fetchUsers()
     ]);
+}
+
+// Fetch and Render Pending Upgrade Requests
+async function fetchUpgradeRequests() {
+    const tbody = document.getElementById('upgrade-requests-tbody');
+    const badgeNav = document.getElementById('pending-badge-nav');
+    const badgeCount = document.getElementById('upgrade-count-badge');
+    if (!tbody) return;
+
+    try {
+        const res = await fetch(`${ADMIN_API_URL}/upgrade-requests`, { headers: getAuthHeaders() });
+        if (!res.ok) throw new Error('Failed to fetch upgrade requests');
+        const data = await res.json();
+        const requests = data.requests || [];
+
+        // Update badges
+        if (badgeCount) badgeCount.textContent = `${requests.length} Pending`;
+        if (badgeNav) {
+            badgeNav.textContent = requests.length;
+            if (requests.length > 0) {
+                badgeNav.classList.remove('hidden');
+            } else {
+                badgeNav.classList.add('hidden');
+            }
+        }
+
+        tbody.innerHTML = '';
+
+        if (requests.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-muted font-medium text-sm">No pending upgrade requests.</td></tr>`;
+            return;
+        }
+
+        requests.forEach(req => {
+            const tr = document.createElement('tr');
+            tr.id = `upgrade-req-${req.id}`;
+            tr.className = 'transition-colors hover:bg-white/5';
+
+            const userEmail = escapeHtml(req.user?.email || 'Unknown');
+            const userTier = escapeHtml(req.user?.tier || 'FREE');
+            const reqDate = escapeHtml(new Date(req.createdAt).toLocaleString());
+            const reqId = escapeHtml(req.id);
+            const userId = escapeHtml(req.userId || '');
+
+            tr.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0 h-9 w-9 rounded-full badge-quota flex items-center justify-center font-bold text-sm">
+                            ${userEmail.charAt(0).toUpperCase()}
+                        </div>
+                        <div class="ml-3.5">
+                            <div class="text-sm font-bold text-main">${userEmail}</div>
+                            <div class="text-xs text-muted font-mono font-medium" title="${userId}">User ID: ${userId.substring(0,8)}...</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2.5 py-1 text-xs font-bold rounded-full badge-status-active">${userTier}</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-xs text-muted font-mono font-medium">
+                    ${reqDate}
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                    <button onclick="handleUpgradeRequestAction('${reqId}', 'APPROVE')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow transition-all cursor-pointer inline-flex items-center">
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Approve
+                    </button>
+                    <button onclick="handleUpgradeRequestAction('${reqId}', 'REJECT')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white shadow transition-all cursor-pointer inline-flex items-center">
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        Decline
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        showAlert(error.message, true);
+    }
+}
+
+async function handleUpgradeRequestAction(requestId, action) {
+    const isApprove = action === 'APPROVE';
+    const actionLabel = isApprove ? 'approve' : 'decline';
+
+    if (!confirm(`Are you sure you want to ${actionLabel} this upgrade request?`)) return;
+
+    try {
+        const res = await fetch(`${ADMIN_API_URL}/upgrade-requests/${requestId}`, {
+            method: 'PATCH',
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ action })
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `Failed to ${actionLabel} upgrade request`);
+
+        showAlert(data.message || `Upgrade request ${actionLabel}d successfully`);
+
+        const row = document.getElementById(`upgrade-req-${requestId}`);
+        if (row) {
+            row.remove();
+        }
+
+        await Promise.all([
+            fetchUpgradeRequests(),
+            fetchUsers()
+        ]);
+    } catch (error) {
+        showAlert(error.message, true);
+    }
 }
 
 // Fetch and Render Configs
@@ -145,38 +266,43 @@ async function fetchUsers() {
                 : 'btn-action-delete font-bold';
                 
             const banBtnText = isBanned ? 'Unban User' : 'Ban User';
+            const userEmail = escapeHtml(u.email);
+            const userId = escapeHtml(u.id);
+            const userRole = escapeHtml(u.role);
+            const userTier = escapeHtml(u.tier);
+            const endpointsCount = Number(u.endpointsCount || 0);
             
             tr.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                         <div class="flex-shrink-0 h-10 w-10 rounded-full badge-quota flex items-center justify-center font-bold text-sm">
-                            ${u.email.charAt(0).toUpperCase()}
+                            ${userEmail.charAt(0).toUpperCase()}
                         </div>
                         <div class="ml-4">
-                            <div class="text-sm font-bold text-main ${isBanned ? 'line-through text-red-500' : ''}">${u.email}</div>
-                            <div class="text-xs text-muted font-mono font-medium" title="${u.id}">ID: ${u.id.substring(0,8)}...</div>
+                            <div class="text-sm font-bold text-main ${isBanned ? 'line-through text-red-500' : ''}">${userEmail}</div>
+                            <div class="text-xs text-muted font-mono font-medium" title="${userId}">ID: ${userId.substring(0,8)}...</div>
                         </div>
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-bold mb-1 text-main">${u.role}</div>
+                    <div class="text-sm font-bold mb-1 text-main">${userRole}</div>
                     <div class="text-xs text-muted flex items-center font-medium">
                         <svg class="w-3.5 h-3.5 mr-1 text-code" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        ${u.endpointsCount || 0} Endpoints
+                        ${endpointsCount} Endpoints
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <select onchange="updateRole('${u.id}', this.value)" class="glass-input text-xs rounded-lg block px-2.5 py-1.5 cursor-pointer font-bold outline-none mb-1.5" ${isBanned ? 'disabled' : ''}>
+                    <select onchange="updateRole('${userId}', this.value)" class="glass-input text-xs rounded-lg block px-2.5 py-1.5 cursor-pointer font-bold outline-none mb-1.5" ${isBanned ? 'disabled' : ''}>
                         <option value="USER" ${u.role === 'USER' ? 'selected' : ''}>USER</option>
                         <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
                     </select>
-                    <select onchange="updateTier('${u.id}', this.value)" class="glass-input text-xs rounded-lg block px-2.5 py-1.5 cursor-pointer font-bold outline-none" ${isBanned ? 'disabled' : ''}>
+                    <select onchange="updateTier('${userId}', this.value)" class="glass-input text-xs rounded-lg block px-2.5 py-1.5 cursor-pointer font-bold outline-none" ${isBanned ? 'disabled' : ''}>
                         <option value="FREE" ${u.tier === 'FREE' ? 'selected' : ''}>FREE PLAN</option>
                         <option value="PRO" ${u.tier === 'PRO' ? 'selected' : ''}>PRO PLAN</option>
                     </select>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button onclick="toggleBan('${u.id}', ${!isBanned})" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${banBtnClass}">
+                    <button onclick="toggleBan('${userId}', ${!isBanned})" class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm ${banBtnClass}">
                         ${banBtnText}
                     </button>
                 </td>
@@ -253,3 +379,6 @@ window.fetchUsers = fetchUsers;
 window.updateTier = updateTier;
 window.updateRole = updateRole;
 window.toggleBan = toggleBan;
+window.fetchUpgradeRequests = fetchUpgradeRequests;
+window.handleUpgradeRequestAction = handleUpgradeRequestAction;
+

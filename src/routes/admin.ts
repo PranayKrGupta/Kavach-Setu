@@ -8,7 +8,9 @@ import {
   updateUserRole,
   updateUserTier,
   getTierConfigs,
-  updateTierConfig
+  updateTierConfig,
+  getPendingUpgradeRequests,
+  handleUpgradeRequest
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -22,5 +24,8 @@ router.patch('/users/:id/role', asyncHandler(updateUserRole));
 router.patch('/users/:id/tier', asyncHandler(updateUserTier));
 router.get('/config/tiers', asyncHandler(getTierConfigs));
 router.patch('/config/tiers/:id', asyncHandler(updateTierConfig));
+router.get('/upgrade-requests', asyncHandler(getPendingUpgradeRequests));
+router.patch('/upgrade-requests/:id', asyncHandler(handleUpgradeRequest));
 
 export default router;
+

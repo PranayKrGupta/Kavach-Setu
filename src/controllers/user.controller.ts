@@ -22,12 +22,102 @@ export async function getProfile(req: AuthenticatedRequest, res: Response): Prom
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { id: true, email: true, tier: true, role: true }
+    select: {
+      id: true,
+      email: true,
+      tier: true,
+      role: true,
+      hasUnreadNotification: true,
+      lastNotificationMessage: true,
+      upgradeRequest: {
+        select: { id: true, status: true, createdAt: true }
+      }
+    }
   });
 
   if (!user) throw new AppError('User not found', 404);
 
   ApiResponse.success(res, { user });
+}
+
+/**
+ * POST /api/user/upgrade-request
+ */
+export async function requestUpgrade(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  if (!userId) throw new AppError('Unauthorized', 401);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { upgradeRequest: true }
+  });
+
+  if (!user) throw new AppError('User not found', 404);
+
+  if (user.tier === 'PRO') {
+    throw new AppError('You are already subscribed to the PRO plan', 400);
+  }
+
+  if (user.upgradeRequest && user.upgradeRequest.status === 'PENDING') {
+    throw new AppError('You already have a pending upgrade request under review', 400);
+  }
+
+  const upgradeRequest = await prisma.upgradeRequest.upsert({
+    where: { userId },
+    update: { status: 'PENDING' },
+    create: { userId, status: 'PENDING' }
+  });
+
+  ApiResponse.success(
+    res,
+    { upgradeRequest },
+    201,
+    'Your request to upgrade to the PRO plan has been submitted for admin approval.'
+  );
+}
+
+/**
+ * GET /api/user/notifications
+ */
+export async function checkNotifications(req: AuthenticatedRequest, res: Response): Promise<void> {
+  const userId = req.user?.userId;
+  if (!userId) throw new AppError('Unauthorized', 401);
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      hasUnreadNotification: true,
+      lastNotificationMessage: true,
+      tier: true
+    }
+  });
+
+  if (!user) throw new AppError('User not found', 404);
+
+  if (user.hasUnreadNotification && user.lastNotificationMessage) {
+    const message = user.lastNotificationMessage;
+
+    // Clear notification flag and message immediately upon retrieval
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        hasUnreadNotification: false,
+        lastNotificationMessage: null
+      }
+    });
+
+    ApiResponse.success(res, {
+      hasNotification: true,
+      message,
+      tier: user.tier
+    });
+  } else {
+    ApiResponse.success(res, {
+      hasNotification: false,
+      message: null,
+      tier: user.tier
+    });
+  }
 }
 
 /**

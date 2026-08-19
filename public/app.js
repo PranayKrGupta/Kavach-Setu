@@ -12,6 +12,16 @@ function showMsg(id, text, isError = true) {
         : 'badge-status-200 px-4 py-3 rounded-xl text-sm text-center mb-4 block font-bold';
 }
 
+function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function hideMsg(id) {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
@@ -161,9 +171,6 @@ async function handleAuth(event, type) {
             showMsg('error-msg', passwordValidation.error);
             return;
         }
-        const tierEl = document.getElementById('register-tier');
-        if (tierEl) payload.tier = tierEl.value;
-
         const submitBtn = document.getElementById('btn-complete-register');
         if (submitBtn) {
             submitBtn.disabled = true;
@@ -253,8 +260,11 @@ async function initDashboard() {
                 adminLink.classList.remove('inline-flex');
             }
         }
+
+        updateUpgradeButtonState(user.tier, user.upgradeRequest);
     }
 
+    await checkUserNotifications();
     await fetchEndpoints();
     await fetchMetrics();
 }
@@ -301,7 +311,15 @@ async function fetchEndpoints() {
         }
 
         currentEndpoints.forEach(ep => {
-            const fullProxyUrl = `${window.location.origin}/proxy/${ep.proxySlug}`;
+            const rawSlug = String(ep.proxySlug || '');
+            const rawUrl = String(ep.targetUrl || '');
+            const rawId = String(ep.id || '');
+            const fullProxyUrl = `${window.location.origin}/proxy/${encodeURIComponent(rawSlug)}`;
+            const escapedSlug = escapeHtml(rawSlug);
+            const escapedTargetUrl = escapeHtml(rawUrl);
+            const escapedId = escapeHtml(rawId);
+            const rateLimitNum = Number(ep.customRateLimit || 60);
+
             const tr = document.createElement('tr');
             tr.className = 'transition-colors';
 
@@ -313,40 +331,40 @@ async function fetchEndpoints() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-mono">
                     <div class="flex items-center space-x-2">
                         <span class="font-extrabold text-code font-mono text-xs truncate max-w-[180px] sm:max-w-[240px]" title="${fullProxyUrl}">
-                            /proxy/${ep.proxySlug}
+                            /proxy/${escapedSlug}
                         </span>
-                        <button onclick="copyProxyUrl('${fullProxyUrl}', this)" class="p-1.5 btn-action-copy rounded-lg transition" title="Copy Full Proxy URL">
+                        <button onclick="copyProxyUrl('${fullProxyUrl}', this)" class="p-1.5 btn-action-copy rounded-lg transition cursor-pointer" title="Copy Full Proxy URL">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         </button>
                     </div>
                 </td>
-                <td class="px-6 py-4 text-xs font-mono max-w-[220px] truncate" title="${ep.targetUrl}">
-                    <a href="${ep.targetUrl}" target="_blank" rel="noopener noreferrer" class="hover:underline text-code font-bold flex items-center">
-                        <span class="truncate">${ep.targetUrl}</span>
+                <td class="px-6 py-4 text-xs font-mono max-w-[220px] truncate" title="${escapedTargetUrl}">
+                    <a href="${escapedTargetUrl}" target="_blank" rel="noopener noreferrer" class="hover:underline text-code font-bold flex items-center">
+                        <span class="truncate">${escapedTargetUrl}</span>
                         <svg class="w-3.5 h-3.5 ml-1 flex-shrink-0 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </a>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-xs">
                     <span class="px-3 py-1 font-bold rounded-lg badge-status-warn font-mono">
-                        ${ep.customRateLimit} req/min
+                        ${rateLimitNum} req/min
                     </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-xs cursor-pointer" onclick="toggleEndpointActive('${ep.id}')" title="Click to toggle active/pause">
+                <td class="px-6 py-4 whitespace-nowrap text-xs cursor-pointer" onclick="toggleEndpointActive('${escapedId}')" title="Click to toggle active/pause">
                     ${statusBadge}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
-                    <button onclick="copyProxyUrl('${fullProxyUrl}', this)" class="btn-action-copy inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm" title="Copy URL">
+                    <button onclick="copyProxyUrl('${fullProxyUrl}', this)" class="btn-action-copy inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm cursor-pointer" title="Copy URL">
                         <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         Copy
                     </button>
-                    <button onclick="openStressTestModal('${ep.id}')" class="gradient-btn-fire inline-flex items-center text-xs font-extrabold px-3.5 py-1.5 rounded-lg transition shadow cursor-pointer" title="Stress Test Rate Limit">
+                    <button onclick="openStressTestModal('${escapedId}')" class="gradient-btn-fire inline-flex items-center text-xs font-extrabold px-3.5 py-1.5 rounded-lg transition shadow cursor-pointer" title="Stress Test Rate Limit">
                         🔥 Stress
                     </button>
-                    <button onclick="openEndpointLogsModal('${ep.id}')" class="btn-action-logs inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm" title="View Request Telemetry">
+                    <button onclick="openEndpointLogsModal('${escapedId}')" class="btn-action-logs inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm cursor-pointer" title="View Request Telemetry">
                         <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
                         Logs
                     </button>
-                    <button onclick="deleteEndpoint('${ep.id}')" class="btn-action-delete inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg">
+                    <button onclick="deleteEndpoint('${escapedId}')" class="btn-action-delete inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg cursor-pointer">
                         Delete
                     </button>
                 </td>
@@ -960,12 +978,17 @@ async function openEndpointLogsModal(endpointId) {
                     badgeClass = 'badge-status-warn';
                 }
 
+                const logTime = escapeHtml(new Date(log.timestamp).toLocaleString());
+                const logMethod = escapeHtml(log.method || 'GET');
+                const logEndpoint = escapeHtml(log.endpoint || '');
+                const logStatus = Number(log.status || 200);
+
                 tr.innerHTML = `
-                    <td class="py-3 px-3 font-mono text-xs text-muted font-medium">${new Date(log.timestamp).toLocaleString()}</td>
-                    <td class="py-3 px-3 font-mono text-xs font-bold text-main">${log.method || 'GET'}</td>
-                    <td class="py-3 px-3 font-mono text-xs text-main truncate max-w-xs font-medium">${log.endpoint}</td>
+                    <td class="py-3 px-3 font-mono text-xs text-muted font-medium">${logTime}</td>
+                    <td class="py-3 px-3 font-mono text-xs font-bold text-main">${logMethod}</td>
+                    <td class="py-3 px-3 font-mono text-xs text-main truncate max-w-xs font-medium">${logEndpoint}</td>
                     <td class="py-3 px-3 text-right">
-                        <span class="px-2.5 py-1 text-xs font-bold rounded-full ${badgeClass}">${log.status}</span>
+                        <span class="px-2.5 py-1 text-xs font-bold rounded-full ${badgeClass}">${logStatus}</span>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -1245,6 +1268,135 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// Upgrade and Notification Utilities
+function updateUpgradeButtonState(tier, upgradeRequest) {
+    const upgradeBtn = document.getElementById('btn-upgrade-pro');
+    if (!upgradeBtn) return;
+
+    if (tier === 'PRO') {
+        upgradeBtn.classList.add('hidden');
+        upgradeBtn.classList.remove('inline-flex');
+    } else {
+        upgradeBtn.classList.remove('hidden');
+        upgradeBtn.classList.add('inline-flex');
+
+        if (upgradeRequest && upgradeRequest.status === 'PENDING') {
+            upgradeBtn.disabled = true;
+            upgradeBtn.innerHTML = '<span id="btn-upgrade-text">⏳ Upgrade Pending Review</span>';
+            upgradeBtn.className = 'inline-flex items-center space-x-1.5 px-3 py-1 text-xs font-bold rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 cursor-not-allowed opacity-80';
+        } else {
+            upgradeBtn.disabled = false;
+            upgradeBtn.innerHTML = '<span id="btn-upgrade-text">⭐ Upgrade to Pro</span>';
+            upgradeBtn.className = 'inline-flex items-center space-x-1.5 px-3 py-1 text-xs font-bold rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-md transition-all cursor-pointer';
+        }
+    }
+}
+
+async function handleUpgradeRequest() {
+    const btn = document.getElementById('btn-upgrade-pro');
+    if (!btn || btn.disabled) return;
+
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span>Submitting...</span>';
+
+    try {
+        const res = await fetch(`${API_URL}/user/upgrade-request`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to submit upgrade request');
+
+        showNotificationBanner({
+            type: 'info',
+            title: 'Upgrade Request Submitted',
+            message: data.message || 'Your request to upgrade to the PRO plan has been submitted for admin approval.'
+        });
+
+        updateUpgradeButtonState('FREE', { status: 'PENDING' });
+    } catch (err) {
+        showNotificationBanner({
+            type: 'error',
+            title: 'Upgrade Request Failed',
+            message: err.message
+        });
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
+}
+
+async function checkUserNotifications() {
+    try {
+        const res = await fetch(`${API_URL}/user/notifications`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        if (data.hasNotification && data.message) {
+            const isApproved = data.message.toLowerCase().includes('approved');
+            showNotificationBanner({
+                type: isApproved ? 'success' : 'warning',
+                title: isApproved ? 'Plan Upgrade Approved! 🎉' : 'Upgrade Request Update',
+                message: data.message
+            });
+
+            if (data.tier) {
+                let user = JSON.parse(localStorage.getItem('user')) || {};
+                user.tier = data.tier;
+                localStorage.setItem('user', JSON.stringify(user));
+
+                const tierEl = document.getElementById('user-tier');
+                if (tierEl) tierEl.textContent = `${data.tier} PLAN`;
+
+                const tierHint = document.getElementById('tier-limit-hint');
+                if (tierHint) {
+                    const maxLimit = data.tier === 'PRO' ? 1000 : 60;
+                    tierHint.textContent = `Tier maximum: ${maxLimit} req/min for ${data.tier} plan`;
+                }
+
+                updateUpgradeButtonState(data.tier, null);
+            }
+        }
+    } catch (err) {
+        console.error('Failed to check notifications:', err);
+    }
+}
+
+function showNotificationBanner({ type = 'info', title, message }) {
+    const banner = document.getElementById('notification-banner');
+    const iconEl = document.getElementById('notification-icon');
+    const titleEl = document.getElementById('notification-title');
+    const msgEl = document.getElementById('notification-message');
+    if (!banner || !titleEl || !msgEl) return;
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+
+    if (type === 'success') {
+        if (iconEl) iconEl.textContent = '🎉';
+        banner.className = 'rounded-xl p-4 transition-all duration-300 shadow-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-300';
+    } else if (type === 'warning' || type === 'error') {
+        if (iconEl) iconEl.textContent = '⚠️';
+        banner.className = 'rounded-xl p-4 transition-all duration-300 shadow-lg border border-rose-500/40 bg-rose-500/10 text-rose-300';
+    } else {
+        if (iconEl) iconEl.textContent = 'ℹ️';
+        banner.className = 'rounded-xl p-4 transition-all duration-300 shadow-lg border border-blue-500/40 bg-blue-500/10 text-blue-300';
+    }
+
+    banner.classList.remove('hidden');
+}
+
+function dismissNotification() {
+    const banner = document.getElementById('notification-banner');
+    if (banner) banner.classList.add('hidden');
+}
+
 // Window exports
 window.applyTheme = applyTheme;
 window.toggleSettingsPopover = toggleSettingsPopover;
@@ -1276,3 +1428,9 @@ window.updatePassword = updatePassword;
 window.deleteAccount = deleteAccount;
 window.validatePassword = validatePassword;
 window.fetchPublicTiers = fetchPublicTiers;
+window.handleUpgradeRequest = handleUpgradeRequest;
+window.checkUserNotifications = checkUserNotifications;
+window.dismissNotification = dismissNotification;
+window.updateUpgradeButtonState = updateUpgradeButtonState;
+window.showNotificationBanner = showNotificationBanner;
+

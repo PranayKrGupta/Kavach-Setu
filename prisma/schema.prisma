@@ -21,15 +21,33 @@ enum Role {
   ADMIN
 }
 
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
-  id             String          @id @default(uuid())
-  email          String          @unique
-  passwordHash   String
-  tier           Tier            @default(FREE)
-  role           Role            @default(USER)
-  isBanned       Boolean         @default(false)
-  createdAt      DateTime        @default(now())
-  proxyEndpoints ProxyEndpoint[]
+  id                      String          @id @default(uuid())
+  email                   String          @unique
+  passwordHash            String
+  tier                    Tier            @default(FREE)
+  role                    Role            @default(USER)
+  isBanned                Boolean         @default(false)
+  hasUnreadNotification   Boolean         @default(false)
+  lastNotificationMessage String?
+  createdAt               DateTime        @default(now())
+  proxyEndpoints          ProxyEndpoint[]
+  upgradeRequest          UpgradeRequest?
+}
+
+model UpgradeRequest {
+  id        String        @id @default(uuid())
+  userId    String        @unique
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model ProxyEndpoint {
@@ -52,3 +70,4 @@ model TierConfig {
   maxTierLimit Int      @default(60)
   updatedAt    DateTime @updatedAt
 }
+
