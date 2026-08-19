@@ -112,13 +112,31 @@ Kavach Setu is fully configured for seamless deployment on **Render**:
 ## 📂 Project Structure
 
 ```text
-src/
-├── config/             # DB instances & typed env variables
-├── controllers/        # Business logic & request handling
-├── middlewares/        # Auth, rate-limiting, and error handlers
-├── models/             # Mongoose schemas (Logs, OTPs)
-├── routes/             # Express route mappings
-├── services/           # External API integrations (EmailJS)
-├── types/              # Centralized TypeScript definitions
-└── utils/              # Reusable helpers (Errors, Handlers, Guards)
+.
+├── prisma/
+│   ├── schema.prisma       # PostgreSQL Prisma schema (Users, Keys, Configs)
+│   └── seed.ts             # Default Tiers and Admin user seeder
+├── public/
+│   ├── assets/             # Brand logos & static image assets
+│   ├── admin.html          # Administrative management portal
+│   ├── admin.js            # Admin portal frontend interactions
+│   ├── app.js              # Auth & dashboard frontend application logic
+│   ├── dashboard.html      # Developer API key & metrics dashboard
+│   ├── index.html          # Authentication (Login/Register) portal
+│   ├── logo.png            # Application logo & favicon
+│   └── style.css           # Glassmorphism UI & multi-theme design system
+├── src/
+│   ├── config/             # DB instances (PostgreSQL, MongoDB) & typed env
+│   ├── controllers/        # Express route request controllers
+│   ├── middlewares/        # JWT auth, RBAC guards, and sliding-window rate limiters
+│   ├── models/             # Mongoose schemas (Logs, Ephemeral OTPs)
+│   ├── routes/             # API routing endpoints
+│   ├── services/           # External service integrations (EmailJS)
+│   ├── types/              # Centralized TypeScript declarations
+│   ├── utils/              # Operational error handlers & response wrappers
+│   └── index.ts            # Main application bootstrap & HTTP server
+├── render.yaml             # Render infrastructure-as-code deployment blueprint
+├── package.json            # Project dependencies & build scripts
+└── tsconfig.json           # TypeScript configuration
 ```
+
