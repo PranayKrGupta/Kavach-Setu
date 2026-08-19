@@ -32,9 +32,9 @@
             </div>
 
             <!-- Tabs -->
-            <div class="flex rounded-lg bg-black/20 border border-white/10 p-1">
-                <button id="tab-login" class="flex-1 py-2 text-sm font-medium rounded-md bg-white/10 text-white shadow transition" onclick="switchTab('login')">Login</button>
-                <button id="tab-register" class="flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 hover:text-white transition" onclick="switchTab('register')">Register</button>
+            <div class="flex rounded-lg bg-black/10 border border-white/10 p-1" style="border-color: var(--border-color);">
+                <button id="tab-login" class="flex-1 py-2 text-sm font-medium rounded-md shadow transition" style="background-color: var(--border-color); color: var(--text-color);" onclick="switchTab('login')">Login</button>
+                <button id="tab-register" class="flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 transition" style="color: var(--text-color);" onclick="switchTab('register')">Register</button>
             </div>
 
             <div id="error-msg" class="hidden"></div>

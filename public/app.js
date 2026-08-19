@@ -48,13 +48,21 @@ function switchTab(tab) {
     if (tab === 'login') {
         loginForm.classList.remove('hidden');
         registerForm.classList.add('hidden');
-        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-md bg-white/10 text-white shadow transition';
-        tabRegister.className = 'flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 hover:text-white transition';
+        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-md shadow transition';
+        tabLogin.style.backgroundColor = 'var(--border-color)';
+        tabLogin.style.color = 'var(--text-color)';
+        tabRegister.className = 'flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 transition';
+        tabRegister.style.backgroundColor = 'transparent';
+        tabRegister.style.color = 'var(--text-color)';
     } else {
         loginForm.classList.add('hidden');
         registerForm.classList.remove('hidden');
-        tabRegister.className = 'flex-1 py-2 text-sm font-medium rounded-md bg-white/10 text-white shadow transition';
-        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 hover:text-white transition';
+        tabRegister.className = 'flex-1 py-2 text-sm font-medium rounded-md shadow transition';
+        tabRegister.style.backgroundColor = 'var(--border-color)';
+        tabRegister.style.color = 'var(--text-color)';
+        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 transition';
+        tabLogin.style.backgroundColor = 'transparent';
+        tabLogin.style.color = 'var(--text-color)';
         
         // Reset registration 2-step state
         const step2 = document.getElementById('register-step-2');

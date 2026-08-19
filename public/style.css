@@ -9,6 +9,20 @@
     --panel-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     --accent-primary: #3b82f6;
     --accent-hover: #2563eb;
+    --badge-text: #ffffff;
+    --success-text: #a7f3d0;
+    --success-bg: rgba(16, 185, 129, 0.2);
+    --success-border: rgba(16, 185, 129, 0.4);
+    --success-title: #34d399;
+    --success-desc: #a7f3d0;
+    --action-btn-text: #9ca3af;
+    --admin-badge-bg: rgba(168, 85, 247, 0.2);
+    --admin-badge-text: #d8b4fe;
+    --admin-badge-border: rgba(168, 85, 247, 0.4);
+    --danger-text: #fca5a5;
+    --danger-bg: rgba(239, 68, 68, 0.15);
+    --danger-border: rgba(239, 68, 68, 0.35);
+    --danger-hover-bg: rgba(239, 68, 68, 0.25);
 }
 
 body.theme-liquid-dark {
@@ -21,6 +35,20 @@ body.theme-liquid-dark {
     --panel-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
     --accent-primary: #00e5ff;
     --accent-hover: #00b4d8;
+    --badge-text: #ffffff;
+    --success-text: #a7f3d0;
+    --success-bg: rgba(16, 185, 129, 0.2);
+    --success-border: rgba(16, 185, 129, 0.4);
+    --success-title: #34d399;
+    --success-desc: #a7f3d0;
+    --action-btn-text: #9ca3af;
+    --admin-badge-bg: rgba(168, 85, 247, 0.2);
+    --admin-badge-text: #d8b4fe;
+    --admin-badge-border: rgba(168, 85, 247, 0.4);
+    --danger-text: #fca5a5;
+    --danger-bg: rgba(239, 68, 68, 0.15);
+    --danger-border: rgba(239, 68, 68, 0.35);
+    --danger-hover-bg: rgba(239, 68, 68, 0.25);
 }
 
 body.theme-liquid-light {
@@ -33,6 +61,20 @@ body.theme-liquid-light {
     --panel-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
     --accent-primary: #2563eb;
     --accent-hover: #1d4ed8;
+    --badge-text: #1f2937;
+    --success-text: #065f46;
+    --success-bg: rgba(16, 185, 129, 0.15);
+    --success-border: rgba(16, 185, 129, 0.35);
+    --success-title: #047857;
+    --success-desc: #065f46;
+    --action-btn-text: #4b5563;
+    --admin-badge-bg: rgba(147, 51, 234, 0.12);
+    --admin-badge-text: #6b21a8;
+    --admin-badge-border: rgba(147, 51, 234, 0.3);
+    --danger-text: #991b1b;
+    --danger-bg: rgba(239, 68, 68, 0.12);
+    --danger-border: rgba(239, 68, 68, 0.25);
+    --danger-hover-bg: rgba(239, 68, 68, 0.2);
 }
 
 body.theme-solarized-dark {
@@ -46,6 +88,20 @@ body.theme-solarized-dark {
     --accent-primary: #2aa198;
     --accent-hover: #268bd2;
     --accent-secondary: #d33682;
+    --badge-text: #ffffff;
+    --success-text: #a7f3d0;
+    --success-bg: rgba(16, 185, 129, 0.2);
+    --success-border: rgba(16, 185, 129, 0.4);
+    --success-title: #2aa198;
+    --success-desc: #859900;
+    --action-btn-text: #9ca3af;
+    --admin-badge-bg: rgba(168, 85, 247, 0.2);
+    --admin-badge-text: #d8b4fe;
+    --admin-badge-border: rgba(168, 85, 247, 0.4);
+    --danger-text: #fca5a5;
+    --danger-bg: rgba(220, 50, 47, 0.2);
+    --danger-border: rgba(220, 50, 47, 0.4);
+    --danger-hover-bg: rgba(220, 50, 47, 0.3);
 }
 
 body.theme-solarized-light {
@@ -59,6 +115,20 @@ body.theme-solarized-light {
     --accent-primary: #268bd2;
     --accent-hover: #2aa198;
     --accent-secondary: #cb4b16;
+    --badge-text: #1f2937;
+    --success-text: #065f46;
+    --success-bg: rgba(16, 185, 129, 0.15);
+    --success-border: rgba(16, 185, 129, 0.35);
+    --success-title: #073642;
+    --success-desc: #002b36;
+    --action-btn-text: #4b5563;
+    --admin-badge-bg: rgba(108, 113, 196, 0.15);
+    --admin-badge-text: #595ab7;
+    --admin-badge-border: rgba(108, 113, 196, 0.35);
+    --danger-text: #b52a1d;
+    --danger-bg: rgba(220, 50, 47, 0.12);
+    --danger-border: rgba(220, 50, 47, 0.3);
+    --danger-hover-bg: rgba(220, 50, 47, 0.2);
 }
 
 * {
@@ -115,3 +185,171 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--text-muted);
 }
+
+/* Theme Contrast Utilities */
+.badge-themed,
+#user-tier,
+#user-count-badge,
+#configs-container span.rounded-full {
+    color: var(--badge-text);
+}
+
+.test-api-result,
+#test-api-result {
+    color: var(--success-text) !important;
+    background-color: var(--success-bg) !important;
+}
+
+.action-btn-themed,
+#keys-tbody button {
+    color: var(--action-btn-text);
+}
+
+.action-btn-themed svg,
+#keys-tbody button svg {
+    stroke: currentColor;
+    fill: none;
+}
+
+/* Admin Badge & Link */
+.admin-badge,
+nav span.tracking-widest.uppercase {
+    background-color: var(--admin-badge-bg) !important;
+    color: var(--admin-badge-text) !important;
+    border: 1px solid var(--admin-badge-border) !important;
+}
+
+#admin-link {
+    background-color: var(--admin-badge-bg) !important;
+    color: var(--admin-badge-text) !important;
+    border-color: var(--admin-badge-border) !important;
+}
+
+/* Ban User / Danger Actions */
+#users-tbody button,
+.btn-ban {
+    background-color: var(--danger-bg) !important;
+    color: var(--danger-text) !important;
+    border: 1px solid var(--danger-border) !important;
+    transition: all 0.2s ease;
+}
+
+#users-tbody button:hover,
+.btn-ban:hover {
+    background-color: var(--danger-hover-bg) !important;
+}
+
+/* Danger / Logout buttons */
+button.text-red-400 {
+    color: var(--danger-text) !important;
+    background-color: var(--danger-bg) !important;
+    border-color: var(--danger-border) !important;
+}
+button.text-red-400:hover {
+    background-color: var(--danger-hover-bg) !important;
+}
+
+/* New API Key Alert in Dashboard */
+#new-key-alert {
+    background-color: var(--success-bg) !important;
+    border: 1px solid var(--success-border) !important;
+}
+
+#new-key-alert h3 {
+    color: var(--success-title) !important;
+}
+
+#new-key-alert p {
+    color: var(--success-desc) !important;
+}
+
+#new-key-alert button[title="Dismiss"] {
+    color: var(--success-title) !important;
+}
+
+#new-key-alert code {
+    background-color: var(--input-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+}
+
+#new-key-alert button:not([title="Dismiss"]) {
+    background-color: var(--accent-primary) !important;
+    color: #ffffff !important;
+}
+#new-key-alert button:not([title="Dismiss"]):hover {
+    background-color: var(--accent-hover) !important;
+}
+
+/* Global Navbar & Interactive Hover States */
+nav a:hover,
+nav button:hover {
+    color: var(--text-color);
+}
+
+/* Select & Option Theme Styling */
+select option {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+body.theme-liquid-light select option,
+body.theme-solarized-light select option {
+    background-color: #ffffff;
+    color: #1e293b;
+}
+body.theme-liquid-dark select option,
+body.theme-solarized-dark select option {
+    background-color: #0f172a;
+    color: #f8fafc;
+}
+
+/* Light Mode Config Badges */
+body.theme-liquid-light #configs-container span.text-amber-300,
+body.theme-solarized-light #configs-container span.text-amber-300 {
+    color: #b45309 !important;
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+}
+body.theme-liquid-light #configs-container span.text-blue-300,
+body.theme-solarized-light #configs-container span.text-blue-300 {
+    color: #1d4ed8 !important;
+    background-color: rgba(37, 99, 235, 0.12) !important;
+    border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Modal Logs Status Badges */
+body.theme-liquid-light #modal-logs-tbody span.text-green-300,
+body.theme-solarized-light #modal-logs-tbody span.text-green-300 {
+    color: var(--success-text) !important;
+    background-color: var(--success-bg) !important;
+    border-color: var(--success-border) !important;
+}
+body.theme-liquid-light #modal-logs-tbody span.text-red-300,
+body.theme-solarized-light #modal-logs-tbody span.text-red-300 {
+    color: var(--danger-text) !important;
+    background-color: var(--danger-bg) !important;
+    border-color: var(--danger-border) !important;
+}
+body.theme-liquid-light #modal-logs-tbody span.text-yellow-300,
+body.theme-solarized-light #modal-logs-tbody span.text-yellow-300 {
+    color: #b45309 !important;
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+/* Light Mode Table Row Hover */
+body.theme-liquid-light tr:hover,
+body.theme-solarized-light tr:hover {
+    background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Popover Tab Contrast */
+#settings-popover button[id^="tab-btn-"]:not(#tab-btn-danger) {
+    color: var(--text-color) !important;
+}
+#settings-popover button#tab-btn-danger {
+    color: var(--danger-text) !important;
+}
+
+
+
