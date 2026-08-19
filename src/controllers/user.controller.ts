@@ -180,10 +180,8 @@ export async function updateEmail(req: AuthenticatedRequest, res: Response): Pro
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new AppError('User not found', 404);
 
-  if (user.passwordHash) {
-    const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isPasswordValid) throw new AppError('Incorrect current password', 401);
-  }
+  const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isPasswordValid) throw new AppError('Incorrect current password', 401);
 
   const otpRecord = await OtpVerification.findOne({
     email: normalizedEmail,
@@ -221,8 +219,8 @@ export async function updatePassword(req: AuthenticatedRequest, res: Response): 
   if (!userId) throw new AppError('Unauthorized', 401);
 
   const { currentPassword, newPassword } = req.body;
-  if (!newPassword) {
-    throw new AppError('New password is required', 400);
+  if (!currentPassword || !newPassword) {
+    throw new AppError('currentPassword and newPassword are required', 400);
   }
 
   const validation = validatePassword(newPassword);
@@ -233,13 +231,8 @@ export async function updatePassword(req: AuthenticatedRequest, res: Response): 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new AppError('User not found', 404);
 
-  if (user.passwordHash) {
-    if (!currentPassword) {
-      throw new AppError('Current password is required to change password', 400);
-    }
-    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isValid) throw new AppError('Incorrect current password', 401);
-  }
+  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isValid) throw new AppError('Incorrect current password', 401);
 
   const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
@@ -259,17 +252,15 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
   if (!userId) throw new AppError('Unauthorized', 401);
 
   const { currentPassword } = req.body;
+  if (!currentPassword) {
+    throw new AppError('currentPassword is required to delete account', 400);
+  }
 
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new AppError('User not found', 404);
 
-  if (user.passwordHash) {
-    if (!currentPassword) {
-      throw new AppError('Current password is required to delete account', 400);
-    }
-    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
-    if (!isValid) throw new AppError('Incorrect current password', 401);
-  }
+  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isValid) throw new AppError('Incorrect current password', 401);
 
   await checkLastAdmin(userId);
 
@@ -280,4 +271,3 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
 
   ApiResponse.success(res, null, 200, 'Account deleted successfully');
 }
-

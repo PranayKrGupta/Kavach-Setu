@@ -7,7 +7,6 @@ export interface EnvConfig {
   DIRECT_URL?: string;
   MONGO_URI: string;
   JWT_SECRET: string;
-  GOOGLE_CLIENT_ID?: string;
   EMAILJS_SERVICE_ID?: string;
   EMAILJS_TEMPLATE_ID?: string;
   EMAILJS_PUBLIC_KEY?: string;
@@ -20,7 +19,6 @@ export const env: EnvConfig = {
   DIRECT_URL: process.env.DIRECT_URL,
   MONGO_URI: process.env.MONGO_URI || 'mongodb://localhost:27017/kavach-setu',
   JWT_SECRET: process.env.JWT_SECRET || 'secret',
-  GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
   EMAILJS_SERVICE_ID: process.env.EMAILJS_SERVICE_ID,
   EMAILJS_TEMPLATE_ID: process.env.EMAILJS_TEMPLATE_ID,
   EMAILJS_PUBLIC_KEY: process.env.EMAILJS_PUBLIC_KEY || process.env.EMAILJS_USER_ID,

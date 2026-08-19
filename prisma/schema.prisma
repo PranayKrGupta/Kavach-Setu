@@ -30,9 +30,7 @@ enum RequestStatus {
 model User {
   id                      String          @id @default(uuid())
   email                   String          @unique
-  passwordHash            String?
-  googleId                String?         @unique
-  authProvider            String          @default("LOCAL")
+  passwordHash            String
   tier                    Tier            @default(FREE)
   role                    Role            @default(USER)
   isBanned                Boolean         @default(false)

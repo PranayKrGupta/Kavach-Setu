@@ -1397,89 +1397,6 @@ function dismissNotification() {
     if (banner) banner.classList.add('hidden');
 }
 
-// Google Authentication Integration
-let currentGoogleClientId = '';
-
-async function initGoogleAuth() {
-    try {
-        const res = await fetch(`${API_URL}/auth/config`);
-        if (!res.ok) return;
-        const data = await res.json();
-        currentGoogleClientId = data.googleClientId || '';
-
-        if (currentGoogleClientId) {
-            const setupGsi = () => {
-                if (window.google && window.google.accounts && window.google.accounts.id) {
-                    window.google.accounts.id.initialize({
-                        client_id: currentGoogleClientId,
-                        callback: handleGoogleCredentialResponse,
-                        auto_select: false,
-                        cancel_on_tap_outside: true
-                    });
-
-                    const container = document.getElementById('g_id_signin_container');
-                    if (container) {
-                        container.innerHTML = '';
-                        window.google.accounts.id.renderButton(container, {
-                            theme: 'filled_black',
-                            size: 'large',
-                            shape: 'pill',
-                            width: 320,
-                            text: 'continue_with'
-                        });
-                    }
-                } else {
-                    setTimeout(setupGsi, 100);
-                }
-            };
-            setupGsi();
-        }
-    } catch (err) {
-        console.warn('Google Auth config fetch failed:', err);
-    }
-}
-
-function triggerGoogleSignIn() {
-    if (currentGoogleClientId && window.google?.accounts?.id) {
-        window.google.accounts.id.prompt();
-    } else {
-        showMsg(
-            'error-msg',
-            'Google Sign-In is ready! To activate in your environment, add GOOGLE_CLIENT_ID to your .env file.',
-            true
-        );
-    }
-}
-
-async function handleGoogleCredentialResponse(response) {
-    if (!response || !response.credential) {
-        showMsg('error-msg', 'Failed to retrieve Google authentication credentials.');
-        return;
-    }
-
-    hideMsg('error-msg');
-
-    try {
-        const res = await fetch(`${API_URL}/auth/google`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ credential: response.credential })
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-            throw new Error(data.error || 'Google authentication failed');
-        }
-
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        window.location.href = '/dashboard.html';
-    } catch (err) {
-        showMsg('error-msg', err.message);
-    }
-}
-
 // Window exports
 window.applyTheme = applyTheme;
 window.toggleSettingsPopover = toggleSettingsPopover;
@@ -1516,8 +1433,4 @@ window.checkUserNotifications = checkUserNotifications;
 window.dismissNotification = dismissNotification;
 window.updateUpgradeButtonState = updateUpgradeButtonState;
 window.showNotificationBanner = showNotificationBanner;
-window.initGoogleAuth = initGoogleAuth;
-window.triggerGoogleSignIn = triggerGoogleSignIn;
-window.handleGoogleCredentialResponse = handleGoogleCredentialResponse;
-
 
