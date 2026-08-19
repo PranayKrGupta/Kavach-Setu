@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Kavach Setu</title>
+    <title>Dashboard - Kavach Setu API Reverse Proxy</title>
     <link rel="icon" type="image/png" href="/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,85 +24,154 @@
         }
     </script>
 </head>
-<body class="theme-liquid-dark min-h-screen">
+<body class="theme-liquid-dark min-h-screen text-main">
     <!-- Navbar -->
     <nav class="glass-panel !rounded-none !border-l-0 !border-r-0 !border-t-0 !p-0 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex-shrink-0 flex items-center space-x-3">
                     <img src="/logo.png" alt="Kavach Setu Logo" class="w-9 h-9 object-contain rounded-lg shadow-sm">
-                    <h1 class="text-xl font-bold tracking-tight">Kavach Setu</h1>
+                    <div>
+                        <h1 class="text-xl font-bold tracking-tight text-main">Kavach Setu</h1>
+                        <p class="text-[10px] uppercase font-mono tracking-widest text-muted">API Gateway & Reverse Proxy</p>
+                    </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <span id="user-email" class="text-sm opacity-70 hidden sm:inline"></span>
-                    <span id="user-tier" class="px-2.5 py-1 text-xs font-semibold rounded-full bg-black/20 border border-white/10" style="color: var(--badge-text);"></span>
-                    <a href="/admin.html" id="admin-link" class="hidden inline-flex items-center text-sm font-medium transition-colors px-3 py-1.5 rounded-lg border" style="background-color: var(--admin-badge-bg); color: var(--admin-badge-text); border-color: var(--admin-badge-border);">
+                    <span id="user-email" class="text-sm text-muted hidden sm:inline font-mono font-medium"></span>
+                    <span id="user-tier" class="px-3 py-1 text-xs font-bold rounded-full badge-quota"></span>
+                    <a href="/admin.html" id="admin-link" class="hidden inline-flex items-center text-sm font-semibold transition-colors px-3 py-1.5 rounded-lg border">
                         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                         Admin Portal
                     </a>
-                    <button onclick="logout()" class="text-sm bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg font-medium transition-colors">Logout</button>
+                    <button onclick="logout()" class="text-sm btn-action-delete px-3 py-1.5 rounded-lg font-semibold transition-colors">Logout</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Container with Consistent Max Width & Padding -->
+    <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        <!-- API Keys Section -->
-        <section class="glass-panel p-6 sm:p-8">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        
+        <!-- Endpoint Creation Section -->
+        <section class="glass-panel p-6 sm:p-8 relative overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
                 <div>
-                    <h2 class="text-xl font-bold tracking-tight">API Keys</h2>
-                    <p class="text-sm opacity-70 mt-0.5">Manage your API keys used for authenticating requests.</p>
+                    <h2 class="text-xl font-bold tracking-tight flex items-center text-main">
+                        <svg class="w-5 h-5 mr-2 text-code" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Create Secure Proxy Endpoint
+                    </h2>
+                    <p class="text-sm text-muted mt-0.5 font-medium">Input your target destination API URL and define custom rate limiting to generate a managed reverse proxy gateway URL.</p>
                 </div>
-                <button onclick="generateApiKey()" class="py-2.5 px-5 bg-primary hover:bg-primary-hover text-white text-sm font-semibold rounded-lg transition-colors shadow-lg flex items-center">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                    Generate New Key
-                </button>
-            </div>
-            
-            <div id="new-key-alert" class="hidden mb-6 p-4 rounded-xl relative border" style="background-color: var(--success-bg); border-color: var(--success-border);">
-                <div class="flex justify-between items-start mb-1">
-                    <h3 class="font-semibold" style="color: var(--success-title);">New API Key Generated!</h3>
-                    <button onclick="document.getElementById('new-key-alert').classList.add('hidden')" class="p-1 rounded-md transition opacity-80 hover:opacity-100" style="color: var(--success-title);" title="Dismiss">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
-                </div>
-                <p class="text-xs mb-3 font-medium opacity-90" style="color: var(--success-desc);">Your new API key is active. You can copy it now or access it anytime from the keys table below.</p>
-                <div class="flex items-center space-x-2">
-                    <code id="new-key-value" class="flex-1 px-3.5 py-2.5 rounded-lg font-mono text-sm break-all border" style="background-color: var(--input-bg); color: var(--text-color); border-color: var(--border-color);"></code>
-                    <button onclick="copyKey(null, this)" class="px-4 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-lg text-sm font-semibold transition shadow">Copy</button>
+                <div class="flex items-center space-x-2 text-xs font-mono px-3.5 py-2 rounded-lg badge-quota font-bold">
+                    <span class="text-muted">Plan Quota:</span>
+                    <span id="endpoints-count-badge" class="text-code font-extrabold">Loading...</span>
                 </div>
             </div>
 
+            <!-- Creation Form -->
+            <form id="create-endpoint-form" onsubmit="handleCreateEndpoint(event)" class="space-y-4">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    <div class="lg:col-span-8">
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-1.5 text-main">
+                            Target Destination API URL <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="url" id="target-url" required placeholder="https://api.example.com/v1/resource or https://jsonplaceholder.typicode.com/todos/1" class="w-full px-4 py-3 glass-input rounded-xl text-sm font-mono placeholder:font-sans">
+                            <button type="button" onclick="fillSampleTargetUrl()" class="absolute right-2.5 top-2.5 px-3 py-1.5 text-xs rounded-lg btn-action-copy font-semibold shadow-sm" title="Use built-in mock endpoint for quick testing">
+                                Quick Sample
+                            </button>
+                        </div>
+                        <p class="text-xs text-muted mt-1 font-medium">Accepts any public or internal HTTP/HTTPS REST endpoint.</p>
+                    </div>
+
+                    <div class="lg:col-span-4">
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-1.5 text-main">
+                            Custom Rate Limit (req/min) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" id="custom-rate-limit" required min="1" max="1000" placeholder="e.g. 10" class="w-full px-4 py-3 glass-input rounded-xl text-sm font-mono font-bold">
+                        <p id="tier-limit-hint" class="text-xs text-muted mt-1 font-medium">Tier max: 60 req/min for FREE plan</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" id="btn-create-endpoint" class="gradient-btn-create py-3 px-8 text-white font-bold rounded-xl text-sm shadow-lg flex items-center space-x-2 cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                        <span id="btn-create-endpoint-text">Generate Proxy Gateway URL</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Success Alert Banner -->
+            <div id="new-endpoint-alert" class="hidden mt-6 p-5 rounded-2xl relative border badge-status-200">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xl">🎉</span>
+                        <h3 class="font-bold text-base">Proxy Gateway Endpoint Created!</h3>
+                    </div>
+                    <button onclick="document.getElementById('new-endpoint-alert').classList.add('hidden')" class="p-1 rounded-md transition opacity-80 hover:opacity-100" title="Dismiss">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <p class="text-xs mb-3 font-medium">Your gateway is online. Requests sent to this proxy URL will be rate-limited and forwarded transparently to your target API.</p>
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <code id="new-endpoint-value" class="flex-1 px-4 py-3 rounded-xl font-mono text-sm break-all modal-sub-card font-bold"></code>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="copyProxyUrl(null, this)" class="px-5 py-3 btn-action-copy rounded-xl text-sm font-bold transition shadow flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            Copy URL
+                        </button>
+                        <button id="btn-alert-stress" onclick="launchStressFromAlert()" class="gradient-btn-fire px-5 py-3 rounded-xl text-sm font-bold transition shadow flex items-center justify-center">
+                            🔥 Stress Test
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Proxy Endpoints List Section -->
+        <section class="glass-panel p-6 sm:p-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                    <h2 class="text-xl font-bold tracking-tight text-main">Active Proxy Endpoints</h2>
+                    <p class="text-sm text-muted mt-0.5 font-medium">Manage your reverse proxy routes, inspect request telemetry, or stress-test throughput.</p>
+                </div>
+                <button onclick="fetchEndpoints()" class="p-2 btn-action-copy rounded-lg transition" title="Refresh List">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                </button>
+            </div>
+
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-white/10">
+                <table class="min-w-full">
                     <thead>
                         <tr>
-                            <th class="px-6 py-3.5 text-left text-xs font-semibold opacity-70 uppercase tracking-wider">API Key</th>
-                            <th class="px-6 py-3.5 text-left text-xs font-semibold opacity-70 uppercase tracking-wider">Created</th>
-                            <th class="px-6 py-3.5 text-left text-xs font-semibold opacity-70 uppercase tracking-wider">Last Used</th>
-                            <th class="px-6 py-3.5 text-right text-xs font-semibold opacity-70 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Proxy Gateway URL</th>
+                            <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Target API Destination</th>
+                            <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Rate Limit</th>
+                            <th class="px-6 py-3.5 text-left text-xs font-bold uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3.5 text-right text-xs font-bold uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="keys-tbody" class="divide-y divide-white/10">
-                        <!-- Keys populated by JS -->
+                    <tbody id="endpoints-tbody">
+                        <!-- Endpoints populated by JS -->
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-muted text-sm font-medium">Loading proxy endpoints...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
         </section>
 
-        <!-- Metrics Section -->
+        <!-- Usage Metrics Chart Section -->
         <section class="glass-panel p-6 sm:p-8">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
-                    <h2 class="text-xl font-bold tracking-tight">Usage Metrics (Last 5 Hours)</h2>
-                    <p class="text-sm opacity-70 mt-0.5">Real-time API traffic and rate-limit activity in 15-minute intervals.</p>
+                    <h2 class="text-xl font-bold tracking-tight text-main">Gateway Traffic Telemetry (Last 5 Hours)</h2>
+                    <p class="text-sm text-muted mt-0.5 font-medium">Real-time forwarding volume and 429 rate-limiting events in 15-minute sliding windows.</p>
                 </div>
                 <div class="flex items-center space-x-2.5">
-                    <label class="text-xs font-semibold opacity-75 uppercase tracking-wider">Filter Key:</label>
-                    <select id="metrics-key-select" onchange="onMetricsKeyChange(this.value)" class="glass-input rounded-lg px-3 py-1.5 text-xs font-medium cursor-pointer max-w-[220px]">
-                        <option value="ALL" class="bg-slate-800 text-white">All Keys (Combined)</option>
+                    <label class="text-xs font-bold uppercase tracking-wider text-muted">Filter Proxy:</label>
+                    <select id="metrics-endpoint-select" onchange="onMetricsEndpointChange(this.value)" class="glass-input rounded-lg px-3 py-2 text-xs font-semibold cursor-pointer max-w-[260px]">
+                        <option value="ALL">All Endpoints (Combined)</option>
                     </select>
                 </div>
             </div>
@@ -111,72 +180,218 @@
             </div>
         </section>
 
-        <!-- Test API Section -->
+        <!-- Quick Gateway Playground Section -->
         <section class="glass-panel p-6 sm:p-8">
-             <div class="mb-6">
-                <h2 class="text-xl font-bold tracking-tight">Test API</h2>
-                <p class="text-sm opacity-70 mt-0.5">Test the rate limit using an API key against the protected endpoint.</p>
+            <div class="mb-6">
+                <h2 class="text-xl font-bold tracking-tight flex items-center text-main">
+                    <svg class="w-5 h-5 mr-2 text-code" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Gateway cURL Playground
+                </h2>
+                <p class="text-sm text-muted mt-0.5 font-medium">Send a test HTTP request directly through your reverse proxy link to inspect the target API payload and gateway response headers.</p>
             </div>
-            <div class="flex flex-col sm:flex-row gap-3">
-                <input type="text" id="test-api-key" placeholder="Enter API Key here..." class="flex-1 px-4 py-2.5 glass-input rounded-lg text-sm">
-                <button onclick="testApi()" class="py-2.5 px-6 bg-primary hover:bg-primary-hover text-white font-semibold rounded-lg transition-colors shadow-lg">
-                    Send Request
-                </button>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div class="md:col-span-3">
+                    <select id="test-proxy-slug" class="w-full px-3.5 py-2.5 glass-input rounded-xl text-sm font-mono font-medium">
+                        <option value="">Select Proxy Endpoint...</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <select id="test-http-method" class="w-full px-3.5 py-2.5 glass-input rounded-xl text-sm font-bold">
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                </div>
+                <div class="md:col-span-5">
+                    <input type="text" id="test-subpath" placeholder="/optional/subpath?key=value" class="w-full px-4 py-2.5 glass-input rounded-xl text-sm font-mono font-medium">
+                </div>
+                <div class="md:col-span-2">
+                    <button onclick="testProxyGateway()" class="w-full py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl transition-colors shadow-lg flex items-center justify-center cursor-pointer">
+                        <span>Send Request</span>
+                    </button>
+                </div>
             </div>
-            <pre id="test-api-result" class="mt-4 hidden border border-white/10 p-4 rounded-xl text-sm font-mono overflow-x-auto" style="color: var(--success-text); background-color: var(--success-bg);"></pre>
+            <pre id="test-api-result" class="mt-4 hidden border p-4 rounded-xl text-xs font-mono overflow-x-auto max-h-60"></pre>
         </section>
     </main>
 
-    <!-- Key Request Logs Modal -->
-    <div id="key-logs-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity opacity-0">
-        <div class="glass-panel w-full max-w-3xl max-h-[85vh] flex flex-col !p-0 shadow-2xl overflow-hidden transform scale-95 transition-transform">
-            <!-- Modal Header -->
-            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/10">
+    <!-- ========================================== -->
+    <!-- STRESS TESTING ENGINE MODAL -->
+    <!-- ========================================== -->
+    <div id="stress-test-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-md transition-opacity opacity-0 overflow-y-auto">
+        <div class="glass-panel w-full max-w-2xl max-h-[92vh] flex flex-col !p-0 shadow-2xl overflow-hidden transform scale-95 transition-transform my-auto">
+            <!-- Modal Header (Fixed at top) -->
+            <div class="p-4 sm:p-5 modal-header-themed flex justify-between items-center flex-shrink-0">
+                <div class="flex items-center space-x-3">
+                    <span class="p-2 rounded-xl bg-red-500/20 text-red-500 border border-red-500/30">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z"></path></svg>
+                    </span>
+                    <div>
+                        <h3 class="text-lg font-bold tracking-tight text-main">Proxy Stress Testing Engine</h3>
+                        <p class="text-xs text-muted font-medium">Simulate concurrent traffic burst to verify gateway rate-limiting.</p>
+                    </div>
+                </div>
+                <button onclick="closeStressTestModal()" class="p-2 btn-action-copy rounded-lg transition" title="Close">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Scrollable Modal Body -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 min-h-0">
+                <!-- Target Endpoint Details Card -->
+                <div class="p-3.5 rounded-xl modal-sub-card space-y-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold uppercase tracking-wider text-muted">Proxy Route:</span>
+                            <code id="stress-proxy-url" class="text-xs font-mono font-bold text-code px-2.5 py-1 rounded badge-quota"></code>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs font-bold uppercase tracking-wider text-muted">Limit:</span>
+                            <span id="stress-limit-badge" class="px-2.5 py-0.5 text-xs font-bold rounded-full badge-status-warn"></span>
+                        </div>
+                    </div>
+                    <div class="text-xs font-medium truncate">
+                        <span class="text-muted">Target Destination: </span>
+                        <span id="stress-target-url" class="font-mono text-code font-semibold"></span>
+                    </div>
+                </div>
+
+                <!-- Stress Controls -->
+                <div class="space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider mb-0.5 text-main">
+                                Concurrent Requests (Max 50)
+                            </label>
+                            <p class="text-xs text-muted font-medium">Parallel asynchronous HTTP fetch requests dispatched simultaneously.</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <div class="flex items-center space-x-1">
+                                <button type="button" onclick="setStressCount(5)" class="px-2.5 py-1 text-xs rounded-md btn-action-copy font-bold transition">5</button>
+                                <button type="button" onclick="setStressCount(15)" class="px-2.5 py-1 text-xs rounded-md btn-action-copy font-bold transition">15</button>
+                                <button type="button" onclick="setStressCount(30)" class="px-2.5 py-1 text-xs rounded-md btn-action-copy font-bold transition">30</button>
+                                <button type="button" onclick="setStressCount(50)" class="px-2.5 py-1 text-xs rounded-md btn-action-copy font-bold transition">50</button>
+                            </div>
+                            <input type="number" id="stress-request-count" min="1" max="50" value="25" class="w-16 px-2.5 py-1 glass-input rounded-lg text-sm font-mono text-center font-extrabold">
+                        </div>
+                    </div>
+
+                    <button id="btn-fire-stress" onclick="runStressTest()" class="gradient-btn-fire w-full py-3 text-white font-extrabold rounded-xl text-sm shadow-xl flex items-center justify-center space-x-2 cursor-pointer">
+                        <span id="btn-fire-stress-icon">🔥</span>
+                        <span id="btn-fire-stress-text">FIRE CONCURRENT REQUESTS</span>
+                    </button>
+                </div>
+
+                <!-- Live Progress & Badges -->
+                <div class="space-y-3 pt-1">
+                    <div>
+                        <div class="flex justify-between text-xs font-mono font-bold mb-1">
+                            <span class="text-muted">Progress</span>
+                            <span id="stress-progress-text" class="text-main">0% (0 / 0)</span>
+                        </div>
+                        <div class="w-full h-3 modal-sub-card rounded-full overflow-hidden p-0.5">
+                            <div id="stress-progress-fill" class="h-full rounded-full transition-all duration-150" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Status Badges Grid -->
+                    <div class="grid grid-cols-3 gap-2.5">
+                        <div class="glass-panel p-2.5 flex flex-col items-center justify-center text-center">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-muted">Dispatched</span>
+                            <span id="stress-count-total" class="text-lg font-extrabold font-mono mt-0.5 text-main">0</span>
+                        </div>
+                        <div class="glass-panel p-2.5 flex flex-col items-center justify-center text-center border-green-500/40">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-green-500">200 OK (Allowed)</span>
+                            <span id="stress-count-200" class="text-lg font-extrabold font-mono text-green-500 mt-0.5">0</span>
+                        </div>
+                        <div class="glass-panel p-2.5 flex flex-col items-center justify-center text-center border-red-500/40">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-red-500">429 Blocked</span>
+                            <span id="stress-count-429" class="text-lg font-extrabold font-mono text-red-500 mt-0.5">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Conclusion Banner -->
+                    <div id="stress-verdict-banner" class="hidden p-3 rounded-xl border text-xs font-bold text-center"></div>
+                </div>
+
+                <!-- Real-time Request Waterfall Log -->
+                <div class="space-y-2 pt-1">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted">Live Dispatch Waterfall Stream</h4>
+                    <div class="overflow-x-auto rounded-xl border modal-sub-card max-h-48 overflow-y-auto">
+                        <table class="min-w-full text-left text-xs font-mono">
+                            <thead class="sticky top-0 z-10">
+                                <tr>
+                                    <th class="py-2.5 px-3">#</th>
+                                    <th class="py-2.5 px-3">Timestamp</th>
+                                    <th class="py-2.5 px-3">Latency</th>
+                                    <th class="py-2.5 px-3 text-right">Result</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stress-waterfall-tbody">
+                                <tr><td colspan="4" class="py-4 text-center text-muted font-sans text-xs font-medium">Ready. Click "FIRE CONCURRENT REQUESTS" above.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- ENDPOINT LOGS MODAL -->
+    <!-- ========================================== -->
+    <div id="key-logs-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm transition-opacity opacity-0 overflow-y-auto">
+        <div class="glass-panel w-full max-w-3xl max-h-[90vh] flex flex-col !p-0 shadow-2xl overflow-hidden transform scale-95 transition-transform my-auto">
+            <!-- Modal Header (Fixed at top) -->
+            <div class="p-4 sm:p-5 modal-header-themed flex justify-between items-center flex-shrink-0">
                 <div>
-                    <h3 class="text-xl font-bold flex items-center tracking-tight">
-                        <svg class="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                        API Key Request Logs
+                    <h3 class="text-lg font-bold flex items-center tracking-tight text-main">
+                        <svg class="w-5 h-5 mr-2 text-code" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Proxy Endpoint Telemetry Logs
                     </h3>
-                    <p id="modal-key-subtitle" class="text-xs font-mono opacity-70 mt-1 truncate max-w-lg"></p>
+                    <p id="modal-key-subtitle" class="text-xs font-mono text-muted mt-0.5 truncate max-w-lg font-medium"></p>
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="refreshCurrentKeyLogs()" class="p-2 opacity-70 hover:opacity-100 hover:bg-white/10 rounded-lg transition" title="Refresh Logs">
+                    <button onclick="refreshCurrentKeyLogs()" class="p-2 btn-action-copy rounded-lg transition" title="Refresh Logs">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
-                    <button onclick="closeKeyLogsModal()" class="p-2 opacity-70 hover:opacity-100 hover:bg-white/10 rounded-lg transition" title="Close">
+                    <button onclick="closeKeyLogsModal()" class="p-2 btn-action-copy rounded-lg transition" title="Close">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
                 </div>
             </div>
 
-            <!-- Summary Stats Cards -->
-            <div class="grid grid-cols-3 gap-4 p-6 border-b border-white/10 bg-black/5">
-                <div class="glass-panel p-4 flex flex-col">
-                    <span class="text-xs font-semibold opacity-70 uppercase tracking-wider">Total Requests</span>
-                    <span id="modal-stat-total" class="text-2xl font-bold mt-1">0</span>
+            <!-- Scrollable Body -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 min-h-0">
+                <!-- Summary Stats Cards -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="glass-panel p-3 flex flex-col">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-muted">Total Requests</span>
+                        <span id="modal-stat-total" class="text-xl font-extrabold mt-0.5 text-main">0</span>
+                    </div>
+                    <div class="glass-panel p-3 flex flex-col border-green-500/30">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-green-500">Successful (2xx)</span>
+                        <span id="modal-stat-success" class="text-xl font-extrabold mt-0.5 text-green-500">0</span>
+                    </div>
+                    <div class="glass-panel p-3 flex flex-col border-red-500/30">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-red-500">Rate Limited (429)</span>
+                        <span id="modal-stat-limited" class="text-xl font-extrabold mt-0.5 text-red-500">0</span>
+                    </div>
                 </div>
-                <div class="glass-panel p-4 flex flex-col border-green-500/20">
-                    <span class="text-xs font-semibold text-green-400 uppercase tracking-wider">Successful (2xx)</span>
-                    <span id="modal-stat-success" class="text-2xl font-bold mt-1 text-green-400">0</span>
-                </div>
-                <div class="glass-panel p-4 flex flex-col border-red-500/20">
-                    <span class="text-xs font-semibold text-red-400 uppercase tracking-wider">Rate Limited (429)</span>
-                    <span id="modal-stat-limited" class="text-2xl font-bold mt-1 text-red-400">0</span>
-                </div>
-            </div>
 
-            <!-- Logs List Table -->
-            <div class="flex-1 overflow-y-auto p-6">
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-white/10 text-left">
-                        <thead>
-                            <tr class="text-xs font-semibold opacity-70 uppercase tracking-wider">
-                                <th class="pb-3">Timestamp</th>
-                                <th class="pb-3">Endpoint</th>
-                                <th class="pb-3 text-right">Status</th>
+                <!-- Logs List Table -->
+                <div class="overflow-x-auto rounded-xl border modal-sub-card max-h-72 overflow-y-auto">
+                    <table class="min-w-full text-left text-xs font-mono">
+                        <thead class="sticky top-0 z-10">
+                            <tr>
+                                <th class="py-2.5 px-3">Timestamp</th>
+                                <th class="py-2.5 px-3">Method</th>
+                                <th class="py-2.5 px-3">Path</th>
+                                <th class="py-2.5 px-3 text-right">Status</th>
                             </tr>
                         </thead>
-                        <tbody id="modal-logs-tbody" class="divide-y divide-white/10 text-sm">
+                        <tbody id="modal-logs-tbody">
                             <!-- Injected by JS -->
                         </tbody>
                     </table>
@@ -193,31 +408,31 @@
     <!-- Tabbed Settings Popover at Bottom-Right -->
     <div id="settings-popover" class="fixed bottom-24 right-6 w-[360px] max-h-[580px] z-50 overflow-hidden hidden flex-col glass-panel !p-0 shadow-2xl transition-all duration-200 opacity-0 transform scale-95">
         <!-- Header Tabs -->
-        <div class="flex border-b border-white/10 bg-black/10">
-            <button onclick="switchSettingsTab('theme')" id="tab-btn-theme" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider bg-white/10 border-b-2 border-primary transition">Theme</button>
-            <button onclick="switchSettingsTab('profile')" id="tab-btn-profile" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider opacity-70 hover:opacity-100 border-b-2 border-transparent transition">Profile</button>
-            <button onclick="switchSettingsTab('security')" id="tab-btn-security" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider opacity-70 hover:opacity-100 border-b-2 border-transparent transition">Security</button>
-            <button onclick="switchSettingsTab('danger')" id="tab-btn-danger" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider opacity-70 hover:opacity-100 text-red-400 border-b-2 border-transparent transition">Danger</button>
+        <div class="flex border-b modal-header-themed">
+            <button onclick="switchSettingsTab('theme')" id="tab-btn-theme" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-primary transition text-main">Theme</button>
+            <button onclick="switchSettingsTab('profile')" id="tab-btn-profile" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-muted hover:text-main border-b-2 border-transparent transition">Profile</button>
+            <button onclick="switchSettingsTab('security')" id="tab-btn-security" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-muted hover:text-main border-b-2 border-transparent transition">Security</button>
+            <button onclick="switchSettingsTab('danger')" id="tab-btn-danger" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-red-500 hover:text-red-400 border-b-2 border-transparent transition">Danger</button>
         </div>
 
         <div class="p-5 overflow-y-auto max-h-[460px]">
             <!-- Theme Tab -->
             <div id="tab-content-theme" class="settings-tab-content block space-y-3">
-                <h3 class="text-sm font-semibold opacity-90">Select Color Theme</h3>
+                <h3 class="text-sm font-bold text-main">Select Color Theme</h3>
                 <div class="grid grid-cols-2 gap-2.5">
-                    <button onclick="applyTheme('theme-liquid-dark')" data-theme="theme-liquid-dark" class="p-3 text-xs font-semibold rounded-lg border border-white/20 bg-[#0b0f19] text-white hover:border-cyan-400 transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                    <button onclick="applyTheme('theme-liquid-dark')" data-theme="theme-liquid-dark" class="p-3 text-xs font-bold rounded-lg border border-slate-700 bg-[#0b0f19] text-white hover:border-cyan-400 transition flex flex-col items-center gap-1.5 shadow-sm">
                         <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
                         Liquid Dark
                     </button>
-                    <button onclick="applyTheme('theme-liquid-light')" data-theme="theme-liquid-light" class="p-3 text-xs font-semibold rounded-lg border border-black/10 bg-[#f1f5f9] text-slate-800 hover:border-blue-500 transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                    <button onclick="applyTheme('theme-liquid-light')" data-theme="theme-liquid-light" class="p-3 text-xs font-bold rounded-lg border border-slate-300 bg-[#ffffff] text-slate-900 hover:border-blue-500 transition flex flex-col items-center gap-1.5 shadow-sm">
                         <span class="w-3 h-3 rounded-full bg-blue-600"></span>
                         Liquid Light
                     </button>
-                    <button onclick="applyTheme('theme-solarized-dark')" data-theme="theme-solarized-dark" class="p-3 text-xs font-semibold rounded-lg border border-white/10 bg-[#002b36] text-[#839496] hover:border-[#2aa198] transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                    <button onclick="applyTheme('theme-solarized-dark')" data-theme="theme-solarized-dark" class="p-3 text-xs font-bold rounded-lg border border-slate-700 bg-[#002b36] text-[#93a1a1] hover:border-[#2aa198] transition flex flex-col items-center gap-1.5 shadow-sm">
                         <span class="w-3 h-3 rounded-full bg-[#2aa198]"></span>
                         Solar Dark
                     </button>
-                    <button onclick="applyTheme('theme-solarized-light')" data-theme="theme-solarized-light" class="p-3 text-xs font-semibold rounded-lg border border-black/10 bg-[#fdf6e3] text-[#586e75] hover:border-[#268bd2] transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                    <button onclick="applyTheme('theme-solarized-light')" data-theme="theme-solarized-light" class="p-3 text-xs font-bold rounded-lg border border-slate-300 bg-[#eee8d5] text-[#073642] hover:border-[#268bd2] transition flex flex-col items-center gap-1.5 shadow-sm">
                         <span class="w-3 h-3 rounded-full bg-[#268bd2]"></span>
                         Solar Light
                     </button>
@@ -226,32 +441,32 @@
 
             <!-- Profile Tab -->
             <div id="tab-content-profile" class="settings-tab-content hidden space-y-4">
-                <h3 class="text-sm font-semibold opacity-90">Update Email Address</h3>
+                <h3 class="text-sm font-bold text-main">Update Email Address</h3>
                 <form id="update-email-form" class="space-y-3.5" onsubmit="updateEmail(event)">
                     <div id="email-step-1">
-                        <label class="block text-xs font-medium opacity-80 mb-1">New Email</label>
+                        <label class="block text-xs font-bold text-muted mb-1">New Email</label>
                         <div class="space-y-2">
-                            <input type="email" id="new-email" required class="w-full px-3.5 py-2 glass-input rounded-lg text-sm" placeholder="new.email@example.com">
-                            <button type="button" id="btn-send-email-otp" onclick="sendEmailUpdateOtp()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg text-xs transition-colors shadow flex items-center justify-center">
+                            <input type="email" id="new-email" required class="w-full px-3.5 py-2 glass-input rounded-lg text-sm font-medium" placeholder="new.email@example.com">
+                            <button type="button" id="btn-send-email-otp" onclick="sendEmailUpdateOtp()" class="w-full py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg text-xs transition shadow flex items-center justify-center">
                                 <span id="btn-send-email-otp-text">Send OTP to New Email</span>
                             </button>
                         </div>
                     </div>
 
-                    <div id="email-step-2" class="hidden space-y-3.5 border-t border-white/10 pt-3">
+                    <div id="email-step-2" class="hidden space-y-3.5 border-t pt-3">
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <label class="block text-xs font-medium opacity-80">6-Digit OTP Code</label>
-                                <button type="button" onclick="sendEmailUpdateOtp()" class="text-[11px] text-blue-400 hover:underline">Resend</button>
+                                <label class="block text-xs font-bold text-muted">6-Digit OTP Code</label>
+                                <button type="button" onclick="sendEmailUpdateOtp()" class="text-xs text-code font-bold hover:underline">Resend</button>
                             </div>
-                            <input type="text" id="email-otp" maxlength="6" class="w-full px-3.5 py-2 glass-input rounded-lg text-sm font-mono text-center tracking-widest" placeholder="123456">
-                            <p class="text-[11px] opacity-60 mt-1">Sent to new email. Valid for 10 minutes.</p>
+                            <input type="text" id="email-otp" maxlength="6" class="w-full px-3.5 py-2 glass-input rounded-lg text-sm font-mono text-center tracking-widest font-bold" placeholder="123456">
+                            <p class="text-[11px] text-muted mt-1 font-medium">Sent to new email. Valid for 10 minutes.</p>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium opacity-80 mb-1">Current Password</label>
+                            <label class="block text-xs font-bold text-muted mb-1">Current Password</label>
                             <input type="password" id="email-password" class="w-full px-3.5 py-2 glass-input rounded-lg text-sm" placeholder="••••••••">
                         </div>
-                        <button type="submit" id="btn-confirm-email" class="w-full py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg text-sm transition-colors shadow flex items-center justify-center">
+                        <button type="submit" id="btn-confirm-email" class="w-full py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg text-sm transition shadow flex items-center justify-center cursor-pointer">
                             <span id="btn-confirm-email-text">Confirm Email Update</span>
                         </button>
                     </div>
@@ -260,33 +475,33 @@
 
             <!-- Security Tab -->
             <div id="tab-content-security" class="settings-tab-content hidden space-y-4">
-                <h3 class="text-sm font-semibold opacity-90">Change Password</h3>
+                <h3 class="text-sm font-bold text-main">Change Password</h3>
                 <form id="update-password-form" class="space-y-3.5" onsubmit="updatePassword(event)">
                     <div>
-                        <label class="block text-xs font-medium opacity-80 mb-1">New Password</label>
+                        <label class="block text-xs font-bold text-muted mb-1">New Password</label>
                         <input type="password" id="new-password" required minlength="6" class="w-full px-3.5 py-2 glass-input rounded-lg text-sm" placeholder="••••••••">
-                        <p class="text-[11px] opacity-60 mt-1">Min. 6 chars with letters, numbers & special characters.</p>
+                        <p class="text-[11px] text-muted mt-1 font-medium">Min. 6 chars with letters, numbers & special characters.</p>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium opacity-80 mb-1">Current Password</label>
+                        <label class="block text-xs font-bold text-muted mb-1">Current Password</label>
                         <input type="password" id="password-password" required class="w-full px-3.5 py-2 glass-input rounded-lg text-sm">
                     </div>
-                    <button type="submit" class="w-full py-2.5 bg-primary hover:bg-primary-hover text-white font-medium rounded-lg text-sm transition-colors shadow">Update Password</button>
+                    <button type="submit" class="w-full py-2.5 bg-primary hover:bg-primary-hover text-white font-bold rounded-lg text-sm transition shadow cursor-pointer">Update Password</button>
                 </form>
             </div>
 
             <!-- Danger Tab -->
             <div id="tab-content-danger" class="settings-tab-content hidden space-y-4">
                 <div>
-                    <h3 class="text-sm font-semibold text-red-400">Delete Account</h3>
-                    <p class="text-xs opacity-70 mt-1">This permanently removes your account and all associated API keys.</p>
+                    <h3 class="text-sm font-bold text-red-500">Delete Account</h3>
+                    <p class="text-xs text-muted mt-1 font-medium">This permanently removes your account and all associated proxy endpoints.</p>
                 </div>
                 <form id="delete-account-form" class="space-y-3.5" onsubmit="deleteAccount(event)">
                     <div>
-                        <label class="block text-xs font-medium text-red-400 mb-1">Confirm with Password</label>
-                        <input type="password" id="delete-password" required class="w-full px-3.5 py-2 glass-input !border-red-500/40 rounded-lg text-sm">
+                        <label class="block text-xs font-bold text-red-500 mb-1">Confirm with Password</label>
+                        <input type="password" id="delete-password" required class="w-full px-3.5 py-2 glass-input !border-red-500/50 rounded-lg text-sm">
                     </div>
-                    <button type="submit" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors shadow">Delete My Account</button>
+                    <button type="submit" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-sm transition shadow cursor-pointer">Delete My Account</button>
                 </form>
             </div>
         </div>

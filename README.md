@@ -1,44 +1,53 @@
-# Kavach Setu: Secure API Gateway & Analytics Portal
+# Kavach Setu v2.0: Developer API Reverse Proxy & Gatekeeper Portal
 
-Kavach Setu is a production-ready, modular Developer API Gateway and Metrics Dashboard. It provides a secure mechanism for users to generate API keys, monitors usage against tier-based rate limits, and offers detailed time-series metrics. It also includes an administrative portal for user management and configuration.
+Kavach Setu is a production-grade, modular **API Reverse Proxy, Rate-Limiting Gatekeeper, and Telemetry Portal**. It allows developers to shield their backend APIs by defining custom rate limits, routing traffic through unique proxy links, inspecting live request telemetry, and running real-time traffic stress tests.
 
-## 🚀 Features
+---
 
-- **2-Step Registration & Email Verification:** Ephemeral OTP email verification powered by EmailJS, stored securely in MongoDB with a 10-minute TTL.
-- **API Key Management:** Users can generate, view, and revoke their API keys. Key secrets are securely hashed (SHA-256) before database storage.
-- **Dynamic Rate Limiting:** Sliding-window rate limiter powered by Redis/MongoDB with caching. Limits adapt dynamically based on user Tiers (`FREE`, `PRO`).
-- **Time-Series Analytics:** Comprehensive 5-hour rolling metrics tracking API key usage, successful requests, and rate-limit violations.
-- **Admin Portal:** Full administrative controls to ban/unban users, alter roles, assign tiers, and modify tier configurations on the fly.
-- **Strong Security:** Passwords hashed with bcrypt, strict TypeScript types, centralized operational error handling, and robust middleware guards.
+## 🚀 Key Features
+
+- **Dynamic API Reverse Proxy:** Forward incoming requests (`GET`, `POST`, `PUT`, `PATCH`, `DELETE`, `OPTIONS`, `HEAD`) transparently to user-defined Target API URLs while shielding backend origins.
+- **Sliding-Window Rate Limiting:** Enforces granular, per-endpoint rate limits calculated against a sliding 60-second window in MongoDB. Returns `429 Too Many Requests` with standard `X-RateLimit-*` and `Retry-After` headers upon breach.
+- **SSRF & Security Defense:** Built-in Server-Side Request Forgery (SSRF) filters blocking local loopback (`localhost`, `127.0.0.1`), internal private networks (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), and cloud metadata services (`169.254.169.254`).
+- **Interactive cURL Playground:** Test reverse proxy routes directly from the dashboard to inspect forwarded payloads, status codes, latency, and injected rate-limiting headers.
+- **Real-Time Traffic Stress Engine:** Simulate burst traffic against your proxy endpoints with live waterfall telemetry to visually verify rate-limiting thresholds.
+- **Time-Series Telemetry & Analytics:** 5-hour rolling telemetry charts and historical request logs (Method, Status, Latency, Timestamp) for every route.
+- **Admin Management Portal:** Manage user access, modify tier rate limits and endpoint allowances, change roles, and ban abusive accounts with instant proxy deactivation.
+- **4-Theme Glassmorphism UI:** WCAG AA compliant design system supporting *Liquid Dark*, *Liquid Light*, *Solar Dark*, and *Solar Light*.
+
+---
 
 ## 🛠 Tech Stack
 
-- **Backend:** Node.js, Express.js, TypeScript
-- **Relational DB:** PostgreSQL (via Prisma ORM) for Users, API Keys, and Tier Configurations
-- **NoSQL DB:** MongoDB (via Mongoose) for high-volume Request Logs and Ephemeral OTPs
-- **Security:** JWT Authentication, Bcrypt password hashing, EmailJS REST API
-- **Frontend:** Vanilla HTML, CSS (Tailwind via CDN), JavaScript (Glassmorphism UI)
+- **Backend Runtime:** Node.js 20.x, Express.js, TypeScript (Strict Mode)
+- **Relational Database:** PostgreSQL (via Prisma ORM) for Users, Proxy Endpoints, and Tier Configurations
+- **NoSQL Database:** MongoDB (via Mongoose) for high-throughput sliding-window Request Logs & OTP verification
+- **Security:** Bcrypt password hashing, JWT Authentication, SSRF Protection, In-Memory Auth Rate Limiting
+- **Frontend:** Vanilla JavaScript, CSS Variables (4 Theme Engine), TailwindCSS, Chart.js
+
+---
 
 ## 📦 Prerequisites
 
-Ensure you have the following installed before setting up the project:
-- [Node.js](https://nodejs.org/en/) (v18 or higher)
-- [PostgreSQL](https://www.postgresql.org/) (Running instance or Supabase/Neon)
-- [MongoDB](https://www.mongodb.com/) (Running instance or MongoDB Atlas)
-- An [EmailJS](https://www.emailjs.com/) account for OTP dispatch
+- [Node.js](https://nodejs.org/en/) (v18.x or v20.x)
+- [PostgreSQL](https://www.postgresql.org/) (Local, Supabase, or Neon)
+- [MongoDB](https://www.mongodb.com/) (Local or MongoDB Atlas)
+- (Optional) [EmailJS](https://www.emailjs.com/) account for OTP email delivery
+
+---
 
 ## ⚙️ Environment Variables
 
-Create a `.env` file in the root directory by copying the provided example:
+Create a `.env` file in the root directory by copying the provided template:
 
 ```bash
 cp .env.example .env
 ```
 
-Ensure the following variables are correctly populated:
+Populate the required values:
 
 ```env
-# Server
+# Server Configuration
 PORT=3000
 JWT_SECRET=your_super_secret_jwt_key_here
 
@@ -49,94 +58,89 @@ DIRECT_URL="postgresql://user:password@localhost:5432/kavach-setu?schema=public"
 # MongoDB Database (Mongoose)
 MONGO_URI="mongodb://localhost:27017/kavach-setu"
 
-# EmailJS OTP Configuration
+# EmailJS OTP Configuration (Optional for local testing - OTP logs to terminal)
 EMAILJS_SERVICE_ID=your_service_id
 EMAILJS_TEMPLATE_ID=your_template_id
 EMAILJS_PUBLIC_KEY=your_public_key
 EMAILJS_PRIVATE_KEY=your_private_key
 ```
 
-*Note: You must enable "Allow EmailJS API for non-browser applications" in your EmailJS Security settings for the backend dispatch to work.*
+---
 
-## 🌐 Deploy to Render (Cloud)
+## 🌐 Deploy to Render
 
-Kavach Setu is fully configured for seamless deployment on **Render**:
+Kavach Setu is fully optimized for **Render's Free Tier**:
 
 ### Option 1: Automatic Blueprint (Recommended)
 1. Go to [Render Dashboard](https://dashboard.render.com/) > **New +** > **Blueprint**.
-2. Connect your GitHub repository (`Kavach-Setu`).
-3. Render will read `render.yaml` and configure everything automatically.
-4. Fill in your environment variables (`DATABASE_URL`, `MONGO_URI`, `EMAILJS_*`, etc.) and click **Apply**.
+2. Connect your repository.
+3. Render reads `render.yaml` and deploys the web service with health check monitoring at `/health`.
+4. Enter environment variables (`DATABASE_URL`, `MONGO_URI`, `JWT_SECRET`) and deploy.
 
 ### Option 2: Manual Web Service
-1. **Create Web Service** on Render connected to your repository.
-2. **Runtime:** `Node`
-3. **Build Command:** `npm install && npm run build && npx prisma db push`
-4. **Start Command:** `npm start`
-5. **Environment Variables:** Add all variables from `.env.example` in the Render Environment tab.
+- **Build Command:** `npm install && npm run build && npx prisma db push`
+- **Start Command:** `npm start`
+- **Health Check Path:** `/health`
 
 ---
 
 ## 🚀 Local Installation & Setup
 
-1. **Clone the repository and install dependencies:**
+1. **Install dependencies:**
    ```bash
    npm install
    ```
 
-2. **Generate the Prisma Client and migrate the database:**
+2. **Sync PostgreSQL Schema:**
    ```bash
    npx prisma generate
    npx prisma db push
    ```
 
-3. **(Optional) Seed the database with default Tiers and Admin user:**
+3. **(Optional) Seed Default Tiers and Admin User:**
    ```bash
-   npx tsx prisma/seed.ts
+   npm run db:seed
    ```
+   *Default Admin credentials:* `admin@kavachsetu.local` / `Admin@123456`
 
-4. **Build the application:**
-   ```bash
-   npm run build
-   ```
-
-5. **Start the development server:**
+4. **Start Development Server:**
    ```bash
    npm run dev
    ```
 
-6. **Access the application:**
-   - Client Portal: `http://localhost:3000`
-   - API endpoints prefix: `http://localhost:3000/api/`
+5. **Open Portal:**
+   - Web Portal: `http://localhost:3000`
+   - Proxy Route Format: `http://localhost:3000/proxy/:slug/*`
+
+---
 
 ## 📂 Project Structure
 
 ```text
 .
 ├── prisma/
-│   ├── schema.prisma       # PostgreSQL Prisma schema (Users, Keys, Configs)
+│   ├── schema.prisma       # PostgreSQL Prisma schema (Users, ProxyEndpoints, TierConfig)
 │   └── seed.ts             # Default Tiers and Admin user seeder
 ├── public/
-│   ├── assets/             # Brand logos & static image assets
+│   ├── assets/             # Brand logos & assets
 │   ├── admin.html          # Administrative management portal
-│   ├── admin.js            # Admin portal frontend interactions
-│   ├── app.js              # Auth & dashboard frontend application logic
-│   ├── dashboard.html      # Developer API key & metrics dashboard
-│   ├── index.html          # Authentication (Login/Register) portal
-│   ├── logo.png            # Application logo & favicon
-│   └── style.css           # Glassmorphism UI & multi-theme design system
+│   ├── admin.js            # Admin portal frontend script
+│   ├── app.js              # Dashboard & telemetry frontend logic
+│   ├── dashboard.html      # Reverse proxy dashboard & stress tester
+│   ├── index.html          # Login / Register portal
+│   ├── logo.png            # Logo icon
+│   └── style.css           # 4-Theme Glassmorphism UI tokens
 ├── src/
-│   ├── config/             # DB instances (PostgreSQL, MongoDB) & typed env
-│   ├── controllers/        # Express route request controllers
-│   ├── middlewares/        # JWT auth, RBAC guards, and sliding-window rate limiters
-│   ├── models/             # Mongoose schemas (Logs, Ephemeral OTPs)
-│   ├── routes/             # API routing endpoints
+│   ├── config/             # DB clients (PostgreSQL, MongoDB) & typed env
+│   ├── controllers/        # Express request controllers (Proxy, Endpoints, Auth, Admin)
+│   ├── middlewares/        # JWT auth, SSRF guards, Admin guards, Auth rate limiters
+│   ├── models/             # Mongoose schemas (RequestLog, OtpVerification)
+│   ├── routes/             # API & Proxy route definitions
 │   ├── services/           # External service integrations (EmailJS)
-│   ├── types/              # Centralized TypeScript declarations
-│   ├── utils/              # Operational error handlers & response wrappers
-│   └── index.ts            # Main application bootstrap & HTTP server
-├── render.yaml             # Render infrastructure-as-code deployment blueprint
-├── package.json            # Project dependencies & build scripts
+│   ├── types/              # Centralized TypeScript types
+│   ├── utils/              # SSRF validator, error handlers, response wrappers
+│   └── index.ts            # Server entry point & security headers
+├── render.yaml             # Render deployment blueprint
+├── package.json            # Version 2.0.0 dependencies & scripts
 └── tsconfig.json           # TypeScript configuration
 ```
-

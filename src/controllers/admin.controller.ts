@@ -16,7 +16,7 @@ export async function getAllUsers(_req: Request, res: Response): Promise<void> {
       isBanned: true,
       createdAt: true,
       _count: {
-        select: { apiKeys: true }
+        select: { proxyEndpoints: true }
       }
     }
   });
@@ -28,7 +28,7 @@ export async function getAllUsers(_req: Request, res: Response): Promise<void> {
     role: u.role,
     isBanned: u.isBanned,
     createdAt: u.createdAt,
-    apiKeysCount: u._count.apiKeys
+    endpointsCount: u._count.proxyEndpoints
   }));
 
   ApiResponse.success(res, { users: formattedUsers });
@@ -115,7 +115,7 @@ export async function updateUserTier(req: Request, res: Response): Promise<void>
  */
 export async function getTierConfigs(_req: Request, res: Response): Promise<void> {
   const configs = await prisma.tierConfig.findMany({
-    orderBy: { requestLimit: 'asc' }
+    orderBy: { maxTierLimit: 'asc' }
   });
 
   ApiResponse.success(res, { configs });
@@ -126,14 +126,13 @@ export async function getTierConfigs(_req: Request, res: Response): Promise<void
  */
 export async function updateTierConfig(req: Request, res: Response): Promise<void> {
   const { id } = req.params;
-  const { requestLimit, windowMs, maxApiKeys } = req.body;
+  const { maxTierLimit, maxEndpoints } = req.body;
 
   const config = await prisma.tierConfig.update({
     where: { id },
     data: {
-      ...(requestLimit !== undefined && { requestLimit: Number(requestLimit) }),
-      ...(windowMs !== undefined && { windowMs: Number(windowMs) }),
-      ...(maxApiKeys !== undefined && { maxApiKeys: Number(maxApiKeys) })
+      ...(maxTierLimit !== undefined && { maxTierLimit: Number(maxTierLimit) }),
+      ...(maxEndpoints !== undefined && { maxEndpoints: Number(maxEndpoints) })
     }
   });
 

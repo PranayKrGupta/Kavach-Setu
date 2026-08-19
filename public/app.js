@@ -8,8 +8,8 @@ function showMsg(id, text, isError = true) {
     if (!el) return;
     el.textContent = text;
     el.className = isError
-        ? 'bg-red-900/50 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm text-center mb-4 block'
-        : 'bg-green-900/50 border border-green-500/50 text-green-200 px-4 py-3 rounded-lg text-sm text-center mb-4 block';
+        ? 'badge-status-429 px-4 py-3 rounded-xl text-sm text-center mb-4 block font-bold'
+        : 'badge-status-200 px-4 py-3 rounded-xl text-sm text-center mb-4 block font-bold';
 }
 
 function hideMsg(id) {
@@ -48,23 +48,14 @@ function switchTab(tab) {
     if (tab === 'login') {
         loginForm.classList.remove('hidden');
         registerForm.classList.add('hidden');
-        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-md shadow transition';
-        tabLogin.style.backgroundColor = 'var(--border-color)';
-        tabLogin.style.color = 'var(--text-color)';
-        tabRegister.className = 'flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 transition';
-        tabRegister.style.backgroundColor = 'transparent';
-        tabRegister.style.color = 'var(--text-color)';
+        tabLogin.className = 'flex-1 py-2 text-sm font-bold rounded-md shadow transition bg-white/10 text-main';
+        tabRegister.className = 'flex-1 py-2 text-sm font-medium rounded-md text-muted hover:text-main transition';
     } else {
         loginForm.classList.add('hidden');
         registerForm.classList.remove('hidden');
-        tabRegister.className = 'flex-1 py-2 text-sm font-medium rounded-md shadow transition';
-        tabRegister.style.backgroundColor = 'var(--border-color)';
-        tabRegister.style.color = 'var(--text-color)';
-        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-md opacity-70 hover:opacity-100 transition';
-        tabLogin.style.backgroundColor = 'transparent';
-        tabLogin.style.color = 'var(--text-color)';
+        tabRegister.className = 'flex-1 py-2 text-sm font-bold rounded-md shadow transition bg-white/10 text-main';
+        tabLogin.className = 'flex-1 py-2 text-sm font-medium rounded-md text-muted hover:text-main transition';
         
-        // Reset registration 2-step state
         const step2 = document.getElementById('register-step-2');
         if (step2) step2.classList.add('hidden');
         const sendBtnText = document.getElementById('btn-send-otp-text');
@@ -88,12 +79,8 @@ async function fetchPublicTiers() {
             configs.forEach(config => {
                 const option = document.createElement('option');
                 option.value = config.tierName;
-                option.className = 'bg-slate-800 text-white';
-                const windowStr = config.windowMs >= 60000 
-                    ? `${Math.round(config.windowMs / 60000)}min` 
-                    : `${config.windowMs / 1000}s`;
                 const tierTitle = config.tierName.charAt(0) + config.tierName.slice(1).toLowerCase();
-                option.textContent = `${tierTitle} (${config.requestLimit} req/${windowStr})`;
+                option.textContent = `${tierTitle} (Max ${config.maxTierLimit} req/min | ${config.maxEndpoints} Endpoints)`;
                 select.appendChild(option);
             });
         }
@@ -132,7 +119,6 @@ async function sendRegisterOtp() {
 
         showMsg('error-msg', data.message || 'Verification code sent to your email!', false);
         
-        // Reveal Step 2 in Registration Form
         const step2 = document.getElementById('register-step-2');
         if (step2) step2.classList.remove('hidden');
 
@@ -218,13 +204,20 @@ function logout() {
     window.location.href = '/';
 }
 
-// Dashboard Functions
+// ==========================================
+// Dashboard State & Proxy Endpoints Logic
+// ==========================================
 let metricsChartInstance = null;
+let currentEndpoints = [];
+let selectedMetricsEndpointSlug = 'ALL';
+let currentLogsModalEndpointId = null;
+let latestCreatedEndpoint = null;
+let activeStressEndpoint = null;
+let isStressTesting = false;
 
 async function initDashboard() {
     let user = JSON.parse(localStorage.getItem('user'));
     
-    // Sync with backend to get latest tier/role
     try {
         const res = await fetch(`${API_URL}/user/me`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
@@ -242,9 +235,15 @@ async function initDashboard() {
         const emailEl = document.getElementById('user-email');
         const tierEl = document.getElementById('user-tier');
         const adminLink = document.getElementById('admin-link');
+        const tierHint = document.getElementById('tier-limit-hint');
 
         if (emailEl) emailEl.textContent = user.email;
         if (tierEl) tierEl.textContent = `${user.tier} PLAN`;
+        if (tierHint) {
+            const maxLimit = user.tier === 'PRO' ? 1000 : 60;
+            tierHint.textContent = `Tier maximum: ${maxLimit} req/min for ${user.tier} plan`;
+        }
+
         if (adminLink) {
             if (user.role === 'ADMIN') {
                 adminLink.classList.remove('hidden');
@@ -256,169 +255,272 @@ async function initDashboard() {
         }
     }
 
-    await fetchKeys();
+    await fetchEndpoints();
     await fetchMetrics();
 }
 
-let selectedMetricsKeyId = 'ALL';
-let currentLogsModalKeyId = null;
+function fillSampleTargetUrl() {
+    const targetInput = document.getElementById('target-url');
+    if (targetInput) {
+        targetInput.value = `${window.location.origin}/api/data`;
+    }
+}
 
-async function fetchKeys() {
-    const tbody = document.getElementById('keys-tbody');
+async function fetchEndpoints() {
+    const tbody = document.getElementById('endpoints-tbody');
+    const quotaBadge = document.getElementById('endpoints-count-badge');
     if (!tbody) return;
 
     try {
-        const res = await fetch(`${API_URL}/keys`, {
+        const res = await fetch(`${API_URL}/endpoints`, {
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const data = await res.json();
+        currentEndpoints = data.endpoints || [];
+
+        const user = JSON.parse(localStorage.getItem('user')) || {};
+        const maxEndpoints = user.tier === 'PRO' ? 10 : 3;
+        if (quotaBadge) {
+            quotaBadge.textContent = `${currentEndpoints.length} / ${maxEndpoints} Endpoints`;
+        }
+
+        // Sync Metrics Filter dropdown & Playground selector
+        syncEndpointDropdowns(currentEndpoints);
 
         tbody.innerHTML = '';
 
-        // Also sync the metrics key dropdown selector
-        const select = document.getElementById('metrics-key-select');
-        if (select) {
-            const currentVal = selectedMetricsKeyId;
-            select.innerHTML = '<option value="ALL" class="bg-slate-800 text-white">All Keys (Combined)</option>';
-            if (data.keys && data.keys.length > 0) {
-                data.keys.forEach((k, idx) => {
-                    const opt = document.createElement('option');
-                    opt.value = k.id;
-                    opt.className = 'bg-slate-800 text-white';
-                    const shortKey = k.id.substring(0, 8);
-                    opt.textContent = `Key ${idx + 1} (${shortKey}...)`;
-                    select.appendChild(opt);
-                });
-                select.value = currentVal;
-            }
-        }
-
-        if (!data.keys || data.keys.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-6 text-center text-sm opacity-60">No API keys found. Generate one above.</td></tr>`;
+        if (currentEndpoints.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="px-6 py-10 text-center text-sm text-muted font-medium">
+                        No proxy endpoints created yet. Fill out the form above to deploy your first reverse proxy link.
+                    </td>
+                </tr>
+            `;
             return;
         }
 
-        data.keys.forEach(key => {
-            const fullApiKey = key.key || key.id;
+        currentEndpoints.forEach(ep => {
+            const fullProxyUrl = `${window.location.origin}/proxy/${ep.proxySlug}`;
             const tr = document.createElement('tr');
-            tr.className = 'hover:bg-white/5 transition-colors';
+            tr.className = 'transition-colors';
+
+            const statusBadge = ep.active
+                ? `<span class="px-3 py-1 text-xs font-bold rounded-full badge-status-active">Active</span>`
+                : `<span class="px-3 py-1 text-xs font-bold rounded-full badge-status-paused">Paused</span>`;
+
             tr.innerHTML = `
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono opacity-90">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono">
                     <div class="flex items-center space-x-2">
-                        <span class="max-w-[240px] sm:max-w-[300px] truncate font-mono text-xs opacity-90" title="${fullApiKey}">${fullApiKey}</span>
-                        <button onclick="copyKey('${fullApiKey}', this)" class="p-1 opacity-60 hover:opacity-100 hover:bg-white/10 rounded transition" title="Copy API Key">
+                        <span class="font-extrabold text-code font-mono text-xs truncate max-w-[180px] sm:max-w-[240px]" title="${fullProxyUrl}">
+                            /proxy/${ep.proxySlug}
+                        </span>
+                        <button onclick="copyProxyUrl('${fullProxyUrl}', this)" class="p-1.5 btn-action-copy rounded-lg transition" title="Copy Full Proxy URL">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                         </button>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm opacity-70">${new Date(key.createdAt).toLocaleString()}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm opacity-70">${key.lastUsed ? new Date(key.lastUsed).toLocaleString() : 'Never'}</td>
+                <td class="px-6 py-4 text-xs font-mono max-w-[220px] truncate" title="${ep.targetUrl}">
+                    <a href="${ep.targetUrl}" target="_blank" rel="noopener noreferrer" class="hover:underline text-code font-bold flex items-center">
+                        <span class="truncate">${ep.targetUrl}</span>
+                        <svg class="w-3.5 h-3.5 ml-1 flex-shrink-0 opacity-75" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                    </a>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-xs">
+                    <span class="px-3 py-1 font-bold rounded-lg badge-status-warn font-mono">
+                        ${ep.customRateLimit} req/min
+                    </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-xs cursor-pointer" onclick="toggleEndpointActive('${ep.id}')" title="Click to toggle active/pause">
+                    ${statusBadge}
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right space-x-2">
-                    <button onclick="copyKey('${fullApiKey}', this)" class="inline-flex items-center text-xs font-medium px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all shadow-sm" title="Copy Key">
+                    <button onclick="copyProxyUrl('${fullProxyUrl}', this)" class="btn-action-copy inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm" title="Copy URL">
                         <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
-                        <span>Copy</span>
+                        Copy
                     </button>
-                    <button onclick="openKeyLogsModal('${key.id}')" class="inline-flex items-center text-xs font-medium px-2.5 py-1.5 rounded-lg bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 transition-all shadow-sm" title="View Request Logs">
+                    <button onclick="openStressTestModal('${ep.id}')" class="gradient-btn-fire inline-flex items-center text-xs font-extrabold px-3.5 py-1.5 rounded-lg transition shadow cursor-pointer" title="Stress Test Rate Limit">
+                        🔥 Stress
+                    </button>
+                    <button onclick="openEndpointLogsModal('${ep.id}')" class="btn-action-logs inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm" title="View Request Telemetry">
                         <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                        <span>Logs</span>
+                        Logs
                     </button>
-                    <button onclick="deleteApiKey('${key.id}')" class="inline-flex items-center text-red-400 hover:text-red-300 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-colors">
-                        Revoke
+                    <button onclick="deleteEndpoint('${ep.id}')" class="btn-action-delete inline-flex items-center text-xs font-bold px-3 py-1.5 rounded-lg">
+                        Delete
                     </button>
                 </td>
             `;
             tbody.appendChild(tr);
         });
     } catch (err) {
-        console.error('Failed to fetch keys', err);
+        console.error('Failed to fetch endpoints', err);
     }
 }
 
-async function generateApiKey() {
+function syncEndpointDropdowns(endpoints) {
+    const metricsSelect = document.getElementById('metrics-endpoint-select');
+    const playgroundSelect = document.getElementById('test-proxy-slug');
+
+    if (metricsSelect) {
+        const curVal = selectedMetricsEndpointSlug;
+        metricsSelect.innerHTML = '<option value="ALL">All Endpoints (Combined)</option>';
+        endpoints.forEach((ep) => {
+            const opt = document.createElement('option');
+            opt.value = ep.proxySlug;
+            opt.textContent = `[${ep.proxySlug}] (${ep.customRateLimit} req/min) - ${ep.targetUrl.substring(0, 30)}...`;
+            metricsSelect.appendChild(opt);
+        });
+        metricsSelect.value = curVal;
+    }
+
+    if (playgroundSelect) {
+        playgroundSelect.innerHTML = '<option value="">Select Proxy Endpoint...</option>';
+        endpoints.forEach(ep => {
+            const opt = document.createElement('option');
+            opt.value = ep.proxySlug;
+            opt.textContent = `/proxy/${ep.proxySlug} (${ep.customRateLimit} req/min)`;
+            playgroundSelect.appendChild(opt);
+        });
+    }
+}
+
+async function handleCreateEndpoint(event) {
+    event.preventDefault();
+    const targetUrlInput = document.getElementById('target-url');
+    const rateLimitInput = document.getElementById('custom-rate-limit');
+    const submitBtn = document.getElementById('btn-create-endpoint');
+    const btnText = document.getElementById('btn-create-endpoint-text');
+
+    if (!targetUrlInput || !rateLimitInput) return;
+
+    const targetUrl = targetUrlInput.value.trim();
+    const customRateLimit = parseInt(rateLimitInput.value, 10);
+
+    if (!targetUrl || isNaN(customRateLimit) || customRateLimit < 1) {
+        alert('Please provide a valid Target URL and Rate Limit (minimum 1)');
+        return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    if (btnText) btnText.textContent = 'Generating Gateway Route...';
+
     try {
-        const res = await fetch(`${API_URL}/keys`, {
+        const res = await fetch(`${API_URL}/endpoints`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: JSON.stringify({ targetUrl, customRateLimit })
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create endpoint');
 
-        if (!res.ok) throw new Error(data.error);
+        const ep = data.endpoint;
+        latestCreatedEndpoint = ep;
 
-        const alertBox = document.getElementById('new-key-alert');
-        const keyValue = document.getElementById('new-key-value');
+        // Reveal Success Alert
+        const alertBox = document.getElementById('new-endpoint-alert');
+        const valueBox = document.getElementById('new-endpoint-value');
+        const fullUrl = `${window.location.origin}/proxy/${ep.proxySlug}`;
 
-        if (keyValue) keyValue.textContent = data.key;
+        if (valueBox) valueBox.textContent = fullUrl;
         if (alertBox) alertBox.classList.remove('hidden');
 
-        // Refresh keys list and metrics
-        fetchKeys();
-        fetchMetrics(selectedMetricsKeyId);
+        // Reset form
+        targetUrlInput.value = '';
+        rateLimitInput.value = '';
+
+        await fetchEndpoints();
+        await fetchMetrics(selectedMetricsEndpointSlug);
+    } catch (err) {
+        alert(err.message);
+    } finally {
+        if (submitBtn) submitBtn.disabled = false;
+        if (btnText) btnText.textContent = 'Generate Proxy Gateway URL';
+    }
+}
+
+function launchStressFromAlert() {
+    if (latestCreatedEndpoint) {
+        openStressTestModal(latestCreatedEndpoint.id);
+    }
+}
+
+function copyProxyUrl(text, btn) {
+    let copyText = text;
+    if (!copyText) {
+        const valBox = document.getElementById('new-endpoint-value');
+        if (valBox) copyText = valBox.textContent;
+    }
+    if (!copyText) return;
+
+    navigator.clipboard.writeText(copyText).then(() => {
+        if (btn) {
+            const orig = btn.innerHTML;
+            btn.innerHTML = `
+                <svg class="w-4 h-4 mr-1 text-green-500 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                <span class="text-green-500 font-bold">Copied!</span>
+            `;
+            setTimeout(() => { btn.innerHTML = orig; }, 1500);
+        } else {
+            alert('Proxy URL copied to clipboard!');
+        }
+    }).catch(err => {
+        console.error('Copy failed: ', err);
+    });
+}
+
+async function toggleEndpointActive(id) {
+    try {
+        const res = await fetch(`${API_URL}/endpoints/${id}/toggle`, {
+            method: 'PATCH',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to toggle status');
+        }
+        await fetchEndpoints();
     } catch (err) {
         alert(err.message);
     }
 }
 
-function copyKey(text, btn) {
-    let keyText = text;
-    if (!keyText) {
-        const keyValue = document.getElementById('new-key-value');
-        if (keyValue) keyText = keyValue.textContent;
-    }
-    if (!keyText) return;
-
-    navigator.clipboard.writeText(keyText).then(() => {
-        if (btn) {
-            const originalContent = btn.innerHTML;
-            btn.innerHTML = `
-                <svg class="w-3.5 h-3.5 mr-1 text-green-400 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                <span class="text-green-400">Copied!</span>
-            `;
-            setTimeout(() => {
-                btn.innerHTML = originalContent;
-            }, 1500);
-        } else {
-            alert('API Key copied to clipboard!');
-        }
-    }).catch(err => {
-        console.error('Could not copy text: ', err);
-    });
-}
-
-async function deleteApiKey(id) {
-    if (!confirm('Are you sure you want to delete this API key? This action cannot be undone.')) return;
+async function deleteEndpoint(id) {
+    if (!confirm('Are you sure you want to delete this proxy endpoint? All incoming traffic to this slug will immediately return 404.')) return;
 
     try {
-        const res = await fetch(`${API_URL}/keys/${id}`, {
+        const res = await fetch(`${API_URL}/endpoints/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
         });
         const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to delete endpoint');
 
-        if (!res.ok) throw new Error(data.error || 'Failed to delete API key');
-
-        if (selectedMetricsKeyId === id) {
-            selectedMetricsKeyId = 'ALL';
-        }
-
-        fetchKeys();
-        fetchMetrics(selectedMetricsKeyId);
+        await fetchEndpoints();
+        await fetchMetrics(selectedMetricsEndpointSlug);
     } catch (err) {
         alert(err.message);
     }
 }
 
-function onMetricsKeyChange(keyId) {
-    selectedMetricsKeyId = keyId;
-    fetchMetrics(keyId);
+// ==========================================
+// Metrics Visualization Logic
+// ==========================================
+function onMetricsEndpointChange(slug) {
+    selectedMetricsEndpointSlug = slug;
+    fetchMetrics(slug);
 }
 
-async function fetchMetrics(keyId = selectedMetricsKeyId) {
+async function fetchMetrics(slug = selectedMetricsEndpointSlug) {
     const chartEl = document.getElementById('metricsChart');
     if (!chartEl) return;
 
     try {
-        const url = keyId && keyId !== 'ALL' 
-            ? `${API_URL}/metrics?apiKeyId=${encodeURIComponent(keyId)}`
+        const url = slug && slug !== 'ALL'
+            ? `${API_URL}/metrics?proxySlug=${encodeURIComponent(slug)}`
             : `${API_URL}/metrics`;
 
         const res = await fetch(url, {
@@ -432,118 +534,25 @@ async function fetchMetrics(keyId = selectedMetricsKeyId) {
     }
 }
 
-// ==========================================
-// Key Request Logs Modal Logic
-// ==========================================
-
-async function openKeyLogsModal(keyId) {
-    currentLogsModalKeyId = keyId;
-    const modal = document.getElementById('key-logs-modal');
-    const subtitle = document.getElementById('modal-key-subtitle');
-    const totalEl = document.getElementById('modal-stat-total');
-    const successEl = document.getElementById('modal-stat-success');
-    const limitedEl = document.getElementById('modal-stat-limited');
-    const tbody = document.getElementById('modal-logs-tbody');
-
-    if (!modal) return;
-
-    // Open modal with loading state
-    modal.classList.remove('hidden');
-    requestAnimationFrame(() => {
-        modal.classList.remove('opacity-0');
-        modal.querySelector('.glass-panel')?.classList.remove('scale-95');
-    });
-
-    if (subtitle) subtitle.textContent = `Loading key: ${keyId}...`;
-    if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="py-8 text-center opacity-60">Fetching request logs...</td></tr>`;
-
-    try {
-        const res = await fetch(`${API_URL}/keys/${keyId}/logs`, {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-        });
-        const data = await res.json();
-
-        if (!res.ok) throw new Error(data.error || 'Failed to fetch logs');
-
-        const { apiKey, stats, logs } = data;
-
-        if (subtitle) subtitle.textContent = `Key: ${apiKey.key} (Created: ${new Date(apiKey.createdAt).toLocaleDateString()})`;
-        if (totalEl) totalEl.textContent = stats.totalRequests || 0;
-        if (successEl) successEl.textContent = stats.successCount || 0;
-        if (limitedEl) limitedEl.textContent = stats.rateLimitedCount || 0;
-
-        if (tbody) {
-            tbody.innerHTML = '';
-            if (!logs || logs.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="py-8 text-center opacity-60">No requests recorded for this API key yet.</td></tr>`;
-                return;
-            }
-
-            logs.forEach(log => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-white/5 transition-colors';
-                
-                let badgeClass = 'bg-slate-700 text-slate-200';
-                if (log.status === 200 || (log.status >= 200 && log.status < 300)) {
-                    badgeClass = 'bg-green-900/40 text-green-300 border border-green-500/40';
-                } else if (log.status === 429) {
-                    badgeClass = 'bg-red-900/40 text-red-300 border border-red-500/40';
-                } else if (log.status >= 400) {
-                    badgeClass = 'bg-yellow-900/40 text-yellow-300 border border-yellow-500/40';
-                }
-
-                tr.innerHTML = `
-                    <td class="py-3 font-mono text-xs opacity-80">${new Date(log.timestamp).toLocaleString()}</td>
-                    <td class="py-3 font-mono text-xs opacity-90">${log.endpoint}</td>
-                    <td class="py-3 text-right">
-                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full ${badgeClass}">${log.status}</span>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-    } catch (err) {
-        if (tbody) tbody.innerHTML = `<tr><td colspan="3" class="py-8 text-center text-red-400">${err.message}</td></tr>`;
-    }
-}
-
-function refreshCurrentKeyLogs() {
-    if (currentLogsModalKeyId) {
-        openKeyLogsModal(currentLogsModalKeyId);
-    }
-}
-
-function closeKeyLogsModal() {
-    const modal = document.getElementById('key-logs-modal');
-    if (!modal) return;
-    modal.classList.add('opacity-0');
-    modal.querySelector('.glass-panel')?.classList.add('scale-95');
-    setTimeout(() => {
-        modal.classList.add('hidden');
-        currentLogsModalKeyId = null;
-    }, 200);
-}
-
 function renderChart(metricsData) {
     const chartCanvas = document.getElementById('metricsChart');
     if (!chartCanvas) return;
     const ctx = chartCanvas.getContext('2d');
 
-    const totalBuckets = 20; // 5 hours / 15 mins = 20 intervals
-    const intervalMs = 15 * 60 * 1000; // 15 minutes in ms
+    const totalBuckets = 20;
+    const intervalMs = 15 * 60 * 1000;
     const labels = [];
     const bucketStarts = [];
     const successes = new Array(totalBuckets).fill(0);
     const failures = new Array(totalBuckets).fill(0);
 
     const now = new Date();
-    // Round current time down to the nearest 15-minute mark (0, 15, 30, 45)
     const roundedMinutes = Math.floor(now.getMinutes() / 15) * 15;
     const currentIntervalStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), roundedMinutes, 0, 0);
 
     for (let i = totalBuckets - 1; i >= 0; i--) {
         const bucketTime = new Date(currentIntervalStart.getTime() - i * intervalMs);
-        const hours = bucketTime.getHours();
+        const hours = String(bucketTime.getHours()).padStart(2, '0');
         const mins = String(bucketTime.getMinutes()).padStart(2, '0');
         labels.push(`${hours}:${mins}`);
         bucketStarts.push(bucketTime.getTime());
@@ -576,7 +585,7 @@ function renderChart(metricsData) {
     const currentTheme = localStorage.getItem('theme') || 'theme-liquid-dark';
     const isLight = currentTheme.includes('light');
     const gridColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
-    const textColor = isLight ? '#64748b' : '#94a3b8';
+    const textColor = isLight ? '#475569' : '#94a3b8';
 
     Chart.defaults.color = textColor;
     metricsChartInstance = new Chart(ctx, {
@@ -585,20 +594,20 @@ function renderChart(metricsData) {
             labels,
             datasets: [
                 {
-                    label: 'Successful Requests (200)',
+                    label: 'Successful Forwarded (200 OK)',
                     data: successes,
                     borderColor: '#10b981',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 2,
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    borderWidth: 2.5,
                     tension: 0.3,
                     fill: true
                 },
                 {
-                    label: 'Rate Limited (429)',
+                    label: 'Rate Limited (429 Blocked)',
                     data: failures,
                     borderColor: '#ef4444',
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    borderWidth: 2,
+                    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                    borderWidth: 2.5,
                     tension: 0.3,
                     fill: true
                 }
@@ -608,48 +617,385 @@ function renderChart(metricsData) {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } },
+                y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, precision: 0 } },
                 x: { grid: { color: gridColor }, ticks: { color: textColor } }
             },
             plugins: {
-                legend: { position: 'top', labels: { color: textColor } }
+                legend: { position: 'top', labels: { color: textColor, font: { weight: 'bold' } } }
             }
         }
     });
 }
 
-async function testApi() {
-    const key = document.getElementById('test-api-key').value;
-    const resultBox = document.getElementById('test-api-result');
-    if (!key) return alert('Please enter an API key');
+// ==========================================
+// STRESS TESTING MODULE
+// ==========================================
+function openStressTestModal(endpointId) {
+    const ep = currentEndpoints.find(e => e.id === endpointId);
+    if (!ep) return alert('Endpoint not found');
 
-    resultBox.classList.remove('hidden');
-    resultBox.textContent = 'Sending request...';
+    activeStressEndpoint = ep;
+    const modal = document.getElementById('stress-test-modal');
+    const proxyUrlEl = document.getElementById('stress-proxy-url');
+    const targetUrlEl = document.getElementById('stress-target-url');
+    const limitBadge = document.getElementById('stress-limit-badge');
 
-    try {
-        const res = await fetch(`${API_URL}/data`, {
-            headers: { 'x-api-key': key }
+    if (proxyUrlEl) proxyUrlEl.textContent = `/proxy/${ep.proxySlug}`;
+    if (targetUrlEl) targetUrlEl.textContent = ep.targetUrl;
+    if (limitBadge) limitBadge.textContent = `${ep.customRateLimit} req/min`;
+
+    resetStressTestUI();
+
+    if (modal) {
+        modal.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('.glass-panel')?.classList.remove('scale-95');
         });
-        const data = await res.json();
-
-        resultBox.textContent = `Status: ${res.status} ${res.statusText}\n\n${JSON.stringify(data, null, 2)}`;
-
-        if (res.status === 429) {
-            resultBox.className = 'mt-4 bg-red-900/20 border border-red-500/50 p-4 rounded-lg text-sm text-red-300 font-mono overflow-x-auto block';
-        } else if (res.ok) {
-            resultBox.className = 'mt-4 bg-green-900/20 border border-green-500/50 p-4 rounded-lg text-sm text-green-300 font-mono overflow-x-auto block';
-        } else {
-            resultBox.className = 'mt-4 bg-yellow-900/20 border border-yellow-500/50 p-4 rounded-lg text-sm text-yellow-300 font-mono overflow-x-auto block';
-        }
-
-        setTimeout(fetchMetrics, 500);
-        setTimeout(fetchKeys, 500);
-    } catch (err) {
-        resultBox.textContent = `Error: ${err.message}`;
     }
 }
 
-// Account Settings Functions
+function closeStressTestModal() {
+    const modal = document.getElementById('stress-test-modal');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    modal.querySelector('.glass-panel')?.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        activeStressEndpoint = null;
+    }, 200);
+}
+
+function setStressCount(num) {
+    const input = document.getElementById('stress-request-count');
+    if (input) input.value = num;
+}
+
+function resetStressTestUI() {
+    const progressFill = document.getElementById('stress-progress-fill');
+    const progressText = document.getElementById('stress-progress-text');
+    const countTotal = document.getElementById('stress-count-total');
+    const count200 = document.getElementById('stress-count-200');
+    const count429 = document.getElementById('stress-count-429');
+    const verdict = document.getElementById('stress-verdict-banner');
+    const waterfall = document.getElementById('stress-waterfall-tbody');
+
+    if (progressFill) {
+        progressFill.style.width = '0%';
+        progressFill.className = 'h-full rounded-full transition-all duration-150 stress-progress-bar';
+    }
+    if (progressText) progressText.textContent = '0% (0 / 0)';
+    if (countTotal) countTotal.textContent = '0';
+    if (count200) count200.textContent = '0';
+    if (count429) count429.textContent = '0';
+    if (verdict) {
+        verdict.className = 'hidden p-3 rounded-xl border text-xs font-bold text-center';
+        verdict.innerHTML = '';
+    }
+    if (waterfall) {
+        waterfall.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-muted font-sans text-xs font-medium">Ready. Click "FIRE CONCURRENT REQUESTS" to begin.</td></tr>`;
+    }
+}
+
+async function runStressTest() {
+    if (isStressTesting || !activeStressEndpoint) return;
+
+    const countInput = document.getElementById('stress-request-count');
+    let count = parseInt(countInput?.value || '20', 10);
+    if (isNaN(count) || count < 1) count = 10;
+    if (count > 50) count = 50;
+    if (countInput) countInput.value = count;
+
+    isStressTesting = true;
+    const fireBtn = document.getElementById('btn-fire-stress');
+    const fireBtnText = document.getElementById('btn-fire-stress-text');
+    const fireBtnIcon = document.getElementById('btn-fire-stress-icon');
+
+    if (fireBtn) fireBtn.disabled = true;
+    if (fireBtnText) fireBtnText.textContent = `FIRING ${count} CONCURRENT REQUESTS...`;
+    if (fireBtnIcon) fireBtnIcon.innerHTML = `<svg class="animate-spin h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+
+    resetStressTestUI();
+    const waterfallTbody = document.getElementById('stress-waterfall-tbody');
+    if (waterfallTbody) waterfallTbody.innerHTML = '';
+
+    const proxyEndpointUrl = `/proxy/${activeStressEndpoint.proxySlug}`;
+    const limit = activeStressEndpoint.customRateLimit;
+
+    let completed = 0;
+    let successCount = 0;
+    let rateLimitedCount = 0;
+    let errorCount = 0;
+
+    const countTotalEl = document.getElementById('stress-count-total');
+    const count200El = document.getElementById('stress-count-200');
+    const count429El = document.getElementById('stress-count-429');
+    const progressFillEl = document.getElementById('stress-progress-fill');
+    const progressTextEl = document.getElementById('stress-progress-text');
+
+    const updateCounters = () => {
+        if (countTotalEl) countTotalEl.textContent = completed;
+        if (count200El) count200El.textContent = successCount;
+        if (count429El) count429El.textContent = rateLimitedCount;
+        const pct = Math.round((completed / count) * 100);
+        if (progressFillEl) progressFillEl.style.width = `${pct}%`;
+        if (progressTextEl) progressTextEl.textContent = `${pct}% (${completed} / ${count})`;
+    };
+
+    const appendWaterfallRow = (idx, status, latencyMs) => {
+        if (!waterfallTbody) return;
+        const tr = document.createElement('tr');
+        tr.className = 'transition-colors animate-fadeIn';
+
+        let badgeClass = 'badge-status-paused';
+        let statusLabel = `${status}`;
+        if (status === 200 || (status >= 200 && status < 300)) {
+            badgeClass = 'badge-status-200';
+            statusLabel = `${status} ALLOWED`;
+        } else if (status === 429) {
+            badgeClass = 'badge-status-429';
+            statusLabel = `429 BLOCKED`;
+        } else {
+            badgeClass = 'badge-status-warn';
+        }
+
+        const timestamp = new Date().toLocaleTimeString();
+        tr.innerHTML = `
+            <td class="py-2.5 px-3 text-muted">#${idx + 1}</td>
+            <td class="py-2.5 px-3 text-main font-medium">${timestamp}</td>
+            <td class="py-2.5 px-3 text-latency font-bold font-mono">${latencyMs} ms</td>
+            <td class="py-2.5 px-3 text-right">
+                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold ${badgeClass}">
+                    ${statusLabel}
+                </span>
+            </td>
+        `;
+        waterfallTbody.insertBefore(tr, waterfallTbody.firstChild);
+    };
+
+    const promises = Array.from({ length: count }, async (_, index) => {
+        const startTime = performance.now();
+        try {
+            const res = await fetch(proxyEndpointUrl, {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' }
+            });
+            const endTime = performance.now();
+            const latency = Math.round(endTime - startTime);
+
+            completed++;
+            if (res.status === 200 || (res.status >= 200 && res.status < 300)) {
+                successCount++;
+            } else if (res.status === 429) {
+                rateLimitedCount++;
+            } else {
+                errorCount++;
+            }
+
+            appendWaterfallRow(index, res.status, latency);
+            updateCounters();
+        } catch (err) {
+            const endTime = performance.now();
+            const latency = Math.round(endTime - startTime);
+            completed++;
+            errorCount++;
+            appendWaterfallRow(index, 502, latency);
+            updateCounters();
+        }
+    });
+
+    await Promise.all(promises);
+
+    // Render Verdict Banner
+    const verdictBanner = document.getElementById('stress-verdict-banner');
+    if (verdictBanner) {
+        verdictBanner.classList.remove('hidden');
+        if (rateLimitedCount > 0) {
+            verdictBanner.className = 'p-3.5 rounded-xl border text-xs font-bold text-center badge-status-200 glow-success';
+            verdictBanner.innerHTML = `
+                <div class="flex items-center justify-center space-x-2">
+                    <span class="text-base">🛡️</span>
+                    <span>Rate Limiter Verified! Gatekeeper successfully passed ${successCount} requests and throttled ${rateLimitedCount} excess requests with HTTP 429.</span>
+                </div>
+            `;
+        } else {
+            verdictBanner.className = 'p-3.5 rounded-xl border text-xs font-bold text-center badge-quota';
+            verdictBanner.innerHTML = `
+                <div class="flex items-center justify-center space-x-2">
+                    <span>⚡ All ${successCount} requests passed within your ${limit} req/min window.</span>
+                </div>
+            `;
+        }
+    }
+
+    isStressTesting = false;
+    if (fireBtn) fireBtn.disabled = false;
+    if (fireBtnText) fireBtnText.textContent = 'FIRE AGAIN';
+    if (fireBtnIcon) fireBtnIcon.textContent = '🔥';
+
+    // Auto-refresh Dashboard telemetry
+    setTimeout(fetchMetrics, 800);
+}
+
+// ==========================================
+// Quick Gateway Playground Tester
+// ==========================================
+async function testProxyGateway() {
+    const slugSelect = document.getElementById('test-proxy-slug');
+    const methodSelect = document.getElementById('test-http-method');
+    const subpathInput = document.getElementById('test-subpath');
+    const resultBox = document.getElementById('test-api-result');
+
+    const slug = slugSelect?.value;
+    const method = methodSelect?.value || 'GET';
+    const subpath = (subpathInput?.value || '').trim();
+
+    if (!slug) return alert('Please select a proxy endpoint from the dropdown.');
+
+    let url = `/proxy/${slug}`;
+    if (subpath) {
+        if (!subpath.startsWith('/') && !subpath.startsWith('?')) {
+            url += `/${subpath}`;
+        } else {
+            url += subpath;
+        }
+    }
+
+    if (resultBox) {
+        resultBox.classList.remove('hidden');
+        resultBox.textContent = `Dispatching [${method}] request to ${url}...`;
+    }
+
+    const startTime = performance.now();
+    try {
+        const res = await fetch(url, { method });
+        const latency = Math.round(performance.now() - startTime);
+        
+        let responseBodyText = '';
+        const contentType = res.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            const data = await res.json();
+            responseBodyText = JSON.stringify(data, null, 2);
+        } else {
+            responseBodyText = await res.text();
+        }
+
+        const headersObj = {};
+        res.headers.forEach((val, key) => { headersObj[key] = val; });
+
+        if (resultBox) {
+            resultBox.textContent = `HTTP ${res.status} ${res.statusText} (${latency} ms)\n\n--- Gateway & Target Headers ---\n${JSON.stringify(headersObj, null, 2)}\n\n--- Response Body ---\n${responseBodyText}`;
+            if (res.status === 429) {
+                resultBox.className = 'mt-4 border p-4 rounded-xl text-xs font-mono overflow-x-auto max-h-60 block badge-status-429';
+            } else if (res.ok) {
+                resultBox.className = 'mt-4 border p-4 rounded-xl text-xs font-mono overflow-x-auto max-h-60 block badge-status-200';
+            } else {
+                resultBox.className = 'mt-4 border p-4 rounded-xl text-xs font-mono overflow-x-auto max-h-60 block badge-status-warn';
+            }
+        }
+
+        setTimeout(fetchMetrics, 500);
+    } catch (err) {
+        if (resultBox) {
+            resultBox.textContent = `Request Failed: ${err.message}`;
+            resultBox.className = 'mt-4 border p-4 rounded-xl text-xs font-mono overflow-x-auto max-h-60 block badge-status-429';
+        }
+    }
+}
+
+// ==========================================
+// Endpoint Request Logs Modal
+// ==========================================
+async function openEndpointLogsModal(endpointId) {
+    currentLogsModalEndpointId = endpointId;
+    const modal = document.getElementById('key-logs-modal');
+    const subtitle = document.getElementById('modal-key-subtitle');
+    const totalEl = document.getElementById('modal-stat-total');
+    const successEl = document.getElementById('modal-stat-success');
+    const limitedEl = document.getElementById('modal-stat-limited');
+    const tbody = document.getElementById('modal-logs-tbody');
+
+    if (!modal) return;
+
+    modal.classList.remove('hidden');
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('.glass-panel')?.classList.remove('scale-95');
+    });
+
+    if (subtitle) subtitle.textContent = `Loading endpoint logs...`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-muted font-medium">Fetching telemetry logs...</td></tr>`;
+
+    try {
+        const res = await fetch(`${API_URL}/endpoints/${endpointId}/logs`, {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch logs');
+
+        const { endpoint, stats, logs } = data;
+
+        if (subtitle) subtitle.textContent = `/proxy/${endpoint.proxySlug} -> ${endpoint.targetUrl}`;
+        if (totalEl) totalEl.textContent = stats.totalRequests || 0;
+        if (successEl) successEl.textContent = stats.successCount || 0;
+        if (limitedEl) limitedEl.textContent = stats.rateLimitedCount || 0;
+
+        if (tbody) {
+            tbody.innerHTML = '';
+            if (!logs || logs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-muted font-medium">No requests recorded for this proxy endpoint yet.</td></tr>`;
+                return;
+            }
+
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                tr.className = 'transition-colors';
+
+                let badgeClass = 'badge-status-paused';
+                if (log.status === 200 || (log.status >= 200 && log.status < 300)) {
+                    badgeClass = 'badge-status-200';
+                } else if (log.status === 429) {
+                    badgeClass = 'badge-status-429';
+                } else if (log.status >= 400) {
+                    badgeClass = 'badge-status-warn';
+                }
+
+                tr.innerHTML = `
+                    <td class="py-3 px-3 font-mono text-xs text-muted font-medium">${new Date(log.timestamp).toLocaleString()}</td>
+                    <td class="py-3 px-3 font-mono text-xs font-bold text-main">${log.method || 'GET'}</td>
+                    <td class="py-3 px-3 font-mono text-xs text-main truncate max-w-xs font-medium">${log.endpoint}</td>
+                    <td class="py-3 px-3 text-right">
+                        <span class="px-2.5 py-1 text-xs font-bold rounded-full ${badgeClass}">${log.status}</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    } catch (err) {
+        if (tbody) tbody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-red-500 font-bold">${err.message}</td></tr>`;
+    }
+}
+
+function refreshCurrentKeyLogs() {
+    if (currentLogsModalEndpointId) {
+        openEndpointLogsModal(currentLogsModalEndpointId);
+    }
+}
+
+function closeKeyLogsModal() {
+    const modal = document.getElementById('key-logs-modal');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    modal.querySelector('.glass-panel')?.classList.add('scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        currentLogsModalEndpointId = null;
+    }, 200);
+}
+
+// ==========================================
+// Account Settings & Profile
+// ==========================================
 async function sendEmailUpdateOtp() {
     const newEmailEl = document.getElementById('new-email');
     const btnEl = document.getElementById('btn-send-email-otp');
@@ -679,7 +1025,6 @@ async function sendEmailUpdateOtp() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to send OTP');
 
-        // Reveal Step 2
         const step2 = document.getElementById('email-step-2');
         if (step2) step2.classList.remove('hidden');
 
@@ -709,11 +1054,6 @@ async function updateEmail(event) {
         return;
     }
 
-    if (otp.length !== 6) {
-        alert('Please enter a valid 6-digit verification code');
-        return;
-    }
-
     if (confirmBtn) confirmBtn.disabled = true;
     if (confirmBtnText) confirmBtnText.textContent = 'Updating Email...';
 
@@ -732,15 +1072,6 @@ async function updateEmail(event) {
         localStorage.setItem('user', JSON.stringify(data.user));
         const emailEl = document.getElementById('user-email');
         if (emailEl) emailEl.textContent = data.user.email;
-
-        // Reset form
-        document.getElementById('new-email').value = '';
-        if (document.getElementById('email-otp')) document.getElementById('email-otp').value = '';
-        document.getElementById('email-password').value = '';
-        const step2 = document.getElementById('email-step-2');
-        if (step2) step2.classList.add('hidden');
-        const sendBtnText = document.getElementById('btn-send-email-otp-text');
-        if (sendBtnText) sendBtnText.textContent = 'Send OTP to New Email';
 
         alert('Email updated successfully!');
         toggleSettingsPopover();
@@ -788,7 +1119,7 @@ async function deleteAccount(event) {
     event.preventDefault();
     const currentPassword = document.getElementById('delete-password').value;
     
-    if (!confirm('Are you ABSOLUTELY sure? This will revoke all API keys and permanently delete your account.')) return;
+    if (!confirm('Are you ABSOLUTELY sure? This will delete all proxy endpoints and permanently delete your account.')) return;
 
     try {
         const res = await fetch(`${API_URL}/user/account`, {
@@ -812,7 +1143,6 @@ async function deleteAccount(event) {
 // ==========================================
 // Theme Management & Popover UI Logic
 // ==========================================
-
 const ALL_THEMES = ['theme-liquid-dark', 'theme-liquid-light', 'theme-solarized-dark', 'theme-solarized-light'];
 
 function applyTheme(themeName) {
@@ -820,20 +1150,18 @@ function applyTheme(themeName) {
     document.body.classList.add(themeName);
     localStorage.setItem('theme', themeName);
 
-    // Sync active highlight on buttons
     document.querySelectorAll('[data-theme]').forEach(btn => {
         if (btn.getAttribute('data-theme') === themeName) {
-            btn.classList.add('ring-2', 'ring-blue-400', 'scale-[1.02]');
+            btn.classList.add('ring-2', 'ring-blue-500', 'scale-[1.02]');
         } else {
-            btn.classList.remove('ring-2', 'ring-blue-400', 'scale-[1.02]');
+            btn.classList.remove('ring-2', 'ring-blue-500', 'scale-[1.02]');
         }
     });
-    
-    // Sync chart colors
+
     if (metricsChartInstance) {
         const isLight = themeName.includes('light');
         const gridColor = isLight ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
-        const textColor = isLight ? '#64748b' : '#94a3b8';
+        const textColor = isLight ? '#475569' : '#94a3b8';
 
         metricsChartInstance.options.scales.x.grid.color = gridColor;
         metricsChartInstance.options.scales.y.grid.color = gridColor;
@@ -854,7 +1182,6 @@ function toggleSettingsPopover() {
     if (popover.classList.contains('hidden')) {
         popover.classList.remove('hidden');
         popover.classList.add('flex');
-        // trigger animation
         requestAnimationFrame(() => {
             popover.classList.remove('opacity-0', 'scale-95');
             popover.classList.add('opacity-100', 'scale-100');
@@ -876,11 +1203,11 @@ function switchSettingsTab(tabName) {
         const content = document.getElementById(`tab-content-${t}`);
         if (btn) {
             if (t === tabName) {
-                btn.classList.add('bg-white/10', 'border-b-2', 'border-primary', 'opacity-100');
-                btn.classList.remove('opacity-70', 'border-transparent');
+                btn.classList.add('bg-white/10', 'border-b-2', 'border-primary', 'text-main');
+                btn.classList.remove('text-muted', 'border-transparent');
             } else {
-                btn.classList.remove('bg-white/10', 'border-b-2', 'border-primary', 'opacity-100');
-                btn.classList.add('opacity-70', 'border-transparent');
+                btn.classList.remove('bg-white/10', 'border-b-2', 'border-primary', 'text-main');
+                btn.classList.add('text-muted', 'border-transparent');
             }
         }
         if (content) {
@@ -895,13 +1222,10 @@ function switchSettingsTab(tabName) {
     });
 }
 
-// Global DOM Content Loaded Setup
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Initialize Saved Theme
     const savedTheme = localStorage.getItem('theme') || 'theme-liquid-dark';
     applyTheme(savedTheme);
 
-    // 2. Settings FAB listener
     const fab = document.getElementById('settings-fab');
     if (fab) {
         fab.addEventListener('click', (e) => {
@@ -910,7 +1234,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 3. Close popover on outside click
     document.addEventListener('click', (e) => {
         const popover = document.getElementById('settings-popover');
         const fabBtn = document.getElementById('settings-fab');
@@ -922,7 +1245,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// Export functions to window for explicit inline invocation
+// Window exports
 window.applyTheme = applyTheme;
 window.toggleSettingsPopover = toggleSettingsPopover;
 window.switchSettingsTab = switchSettingsTab;
@@ -932,16 +1255,24 @@ window.sendEmailUpdateOtp = sendEmailUpdateOtp;
 window.switchTab = switchTab;
 window.logout = logout;
 window.initDashboard = initDashboard;
-window.generateApiKey = generateApiKey;
-window.copyKey = copyKey;
-window.deleteApiKey = deleteApiKey;
-window.testApi = testApi;
+window.fetchEndpoints = fetchEndpoints;
+window.handleCreateEndpoint = handleCreateEndpoint;
+window.copyProxyUrl = copyProxyUrl;
+window.toggleEndpointActive = toggleEndpointActive;
+window.deleteEndpoint = deleteEndpoint;
+window.fillSampleTargetUrl = fillSampleTargetUrl;
+window.onMetricsEndpointChange = onMetricsEndpointChange;
+window.openStressTestModal = openStressTestModal;
+window.closeStressTestModal = closeStressTestModal;
+window.setStressCount = setStressCount;
+window.runStressTest = runStressTest;
+window.launchStressFromAlert = launchStressFromAlert;
+window.openEndpointLogsModal = openEndpointLogsModal;
+window.closeKeyLogsModal = closeKeyLogsModal;
+window.refreshCurrentKeyLogs = refreshCurrentKeyLogs;
+window.testProxyGateway = testProxyGateway;
 window.updateEmail = updateEmail;
 window.updatePassword = updatePassword;
 window.deleteAccount = deleteAccount;
 window.validatePassword = validatePassword;
 window.fetchPublicTiers = fetchPublicTiers;
-window.onMetricsKeyChange = onMetricsKeyChange;
-window.openKeyLogsModal = openKeyLogsModal;
-window.closeKeyLogsModal = closeKeyLogsModal;
-window.refreshCurrentKeyLogs = refreshCurrentKeyLogs;

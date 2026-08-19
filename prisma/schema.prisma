@@ -22,31 +22,33 @@ enum Role {
 }
 
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String
-  tier         Tier      @default(FREE)
-  role         Role      @default(USER)
-  isBanned     Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  apiKeys      ApiKey[]
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String
+  tier           Tier            @default(FREE)
+  role           Role            @default(USER)
+  isBanned       Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  proxyEndpoints ProxyEndpoint[]
 }
 
-model ApiKey {
-  id        String    @id @default(uuid())
-  key       String?
-  keyHash   String    @unique
-  userId    String
-  user      User      @relation(fields: [userId], references: [id])
-  createdAt DateTime  @default(now())
-  lastUsed  DateTime?
+model ProxyEndpoint {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetUrl       String
+  proxySlug       String   @unique
+  customRateLimit Int
+  windowMs        Int      @default(60000)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model TierConfig {
   id           String   @id @default(uuid())
   tierName     String   @unique
-  requestLimit Int
-  windowMs     Int
-  maxApiKeys   Int      @default(2)
+  maxEndpoints Int      @default(2)
+  maxTierLimit Int      @default(60)
   updatedAt    DateTime @updatedAt
 }

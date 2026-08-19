@@ -23,88 +23,88 @@
         }
     </script>
 </head>
-<body class="theme-liquid-dark min-h-screen pb-12">
+<body class="theme-liquid-dark min-h-screen pb-12 text-main">
     <!-- Navbar -->
     <nav class="glass-panel !rounded-none !border-l-0 !border-r-0 !border-t-0 !p-0 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex items-center space-x-3">
                     <img src="/logo.png" alt="Kavach Setu Logo" class="w-9 h-9 object-contain rounded-lg shadow-sm">
-                    <span class="admin-badge border px-2.5 py-1 rounded-md text-xs font-bold tracking-widest uppercase" style="background-color: var(--admin-badge-bg); color: var(--admin-badge-text); border-color: var(--admin-badge-border);">ADMIN</span>
-                    <h1 class="text-xl font-bold tracking-tight">Kavach Setu Portal</h1>
+                    <span class="admin-badge border px-2.5 py-1 rounded-md text-xs font-extrabold tracking-widest uppercase">ADMIN</span>
+                    <h1 class="text-xl font-bold tracking-tight text-main">Kavach Setu Portal</h1>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="/dashboard.html" class="inline-flex items-center text-sm font-medium opacity-85 hover:opacity-100 transition-colors bg-white/10 hover:bg-white/20 border border-white/10 px-3.5 py-1.5 rounded-lg shadow-sm" style="color: var(--text-color); border-color: var(--border-color);">
-                        <svg class="w-4 h-4 mr-1.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 00-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <a href="/dashboard.html" class="inline-flex items-center text-sm font-bold transition-colors btn-action-copy px-3.5 py-1.5 rounded-lg shadow-sm">
+                        <svg class="w-4 h-4 mr-1.5 text-code" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 00-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                         User Dashboard
                     </a>
                     <div class="h-4 w-px bg-white/20 hidden sm:block"></div>
-                    <span id="admin-email" class="text-sm font-medium opacity-80 hidden sm:inline-block"></span>
-                    <button onclick="logout()" class="text-sm bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-3.5 py-1.5 rounded-lg font-medium transition-colors">Logout</button>
+                    <span id="admin-email" class="text-sm font-medium text-muted hidden sm:inline-block"></span>
+                    <button onclick="logout()" class="text-sm btn-action-delete px-3.5 py-1.5 rounded-lg font-bold transition-colors">Logout</button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <!-- Main Container with Consistent Max Width & Padding -->
+    <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
         <!-- Alerts -->
-        <div id="alert-box" class="hidden rounded-xl p-4 mb-4 text-sm font-medium shadow-lg transition-all duration-300 transform translate-y-0 opacity-100">
+        <div id="alert-box" class="hidden rounded-xl p-4 mb-4 text-sm font-bold shadow-lg transition-all duration-300 transform translate-y-0 opacity-100">
             <span id="alert-msg"></span>
         </div>
 
         <!-- System Config Section -->
         <section class="glass-panel p-6 sm:p-8 relative overflow-hidden">
             <div class="mb-6 relative z-10">
-                <h2 class="text-xl font-bold flex items-center tracking-tight">
-                    <svg class="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <h2 class="text-xl font-bold flex items-center tracking-tight text-main">
+                    <svg class="w-5 h-5 mr-2 text-code" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                     Rate Limit Configuration
                 </h2>
-                <p class="text-sm opacity-70 mt-1">Dynamically adjust global API limits across tiers. Takes up to 5 mins to propagate.</p>
+                <p class="text-sm text-muted mt-1 font-medium">Dynamically adjust global API limits across tiers. Takes up to 5 mins to propagate.</p>
             </div>
             
             <div id="configs-container" class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
                 <!-- Configs injected here -->
-                <div class="animate-pulse bg-white/5 h-32 rounded-xl"></div>
-                <div class="animate-pulse bg-white/5 h-32 rounded-xl"></div>
+                <div class="animate-pulse modal-sub-card h-32 rounded-xl"></div>
+                <div class="animate-pulse modal-sub-card h-32 rounded-xl"></div>
             </div>
         </section>
 
         <!-- User Management Section -->
         <section class="glass-panel !p-0 shadow-lg flex flex-col overflow-hidden">
-            <div class="p-6 border-b border-white/10 flex justify-between items-center bg-black/10">
+            <div class="p-6 modal-header-themed flex justify-between items-center">
                 <div>
-                    <h2 class="text-xl font-bold flex items-center tracking-tight">
-                        <svg class="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <h2 class="text-xl font-bold flex items-center tracking-tight text-main">
+                        <svg class="w-5 h-5 mr-2 text-code" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                         User Management
                     </h2>
-                    <p class="text-sm opacity-70 mt-1">Manage user access, ban status, and tier subscriptions.</p>
+                    <p class="text-sm text-muted mt-1 font-medium">Manage user access, ban status, and tier subscriptions.</p>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <button onclick="fetchUsers()" class="p-2 opacity-80 hover:opacity-100 bg-white/10 hover:bg-white/20 rounded-lg border border-white/10 transition-colors flex items-center shadow-sm" style="color: var(--text-color); border-color: var(--border-color);" title="Refresh Users">
+                    <button onclick="fetchUsers()" class="p-2 btn-action-copy rounded-lg transition-colors flex items-center shadow-sm" title="Refresh Users">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     </button>
-                    <div class="text-xs opacity-80 bg-white/10 px-3.5 py-1.5 rounded-lg font-mono border border-white/10 shadow-sm" id="user-count-badge" style="color: var(--badge-text);">
+                    <div class="text-xs badge-quota px-3.5 py-1.5 rounded-lg font-mono font-bold shadow-sm" id="user-count-badge">
                         Loading...
                     </div>
                 </div>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-white/10">
-                    <thead class="bg-black/15">
+                <table class="min-w-full">
+                    <thead>
                         <tr>
-                            <th class="px-6 py-4 text-left text-xs font-semibold opacity-70 uppercase tracking-wider">User Details</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold opacity-70 uppercase tracking-wider">Role & Keys</th>
-                            <th class="px-6 py-4 text-left text-xs font-semibold opacity-70 uppercase tracking-wider">Tier Assignment</th>
-                            <th class="px-6 py-4 text-right text-xs font-semibold opacity-70 uppercase tracking-wider">Actions</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">User Details</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Role & Keys</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider">Tier Assignment</th>
+                            <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody id="users-tbody" class="divide-y divide-white/10">
+                    <tbody id="users-tbody">
                         <!-- Users injected here -->
                         <tr>
-                            <td colspan="4" class="px-6 py-8 text-center opacity-60">Loading users...</td>
+                            <td colspan="4" class="px-6 py-8 text-center text-muted font-medium">Loading users...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -120,31 +120,31 @@
     <!-- Tabbed Settings Popover at Bottom-Right -->
     <div id="settings-popover" class="fixed bottom-24 right-6 w-[360px] max-h-[580px] z-50 overflow-hidden hidden flex-col glass-panel !p-0 shadow-2xl transition-all duration-200 opacity-0 transform scale-95">
         <!-- Header Tabs -->
-        <div class="flex border-b border-white/10 bg-black/10">
-            <button onclick="switchSettingsTab('theme')" id="tab-btn-theme" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider bg-white/10 border-b-2 border-primary transition">Theme</button>
-            <button onclick="switchSettingsTab('profile')" id="tab-btn-profile" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider opacity-70 hover:opacity-100 border-b-2 border-transparent transition">Profile</button>
-            <button onclick="switchSettingsTab('security')" id="tab-btn-security" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider opacity-70 hover:opacity-100 border-b-2 border-transparent transition">Security</button>
-            <button onclick="switchSettingsTab('danger')" id="tab-btn-danger" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider opacity-70 hover:opacity-100 text-red-400 border-b-2 border-transparent transition">Danger</button>
+        <div class="flex border-b modal-header-themed">
+            <button onclick="switchSettingsTab('theme')" id="tab-btn-theme" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider border-b-2 border-primary transition text-main">Theme</button>
+            <button onclick="switchSettingsTab('profile')" id="tab-btn-profile" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-muted hover:text-main border-b-2 border-transparent transition">Profile</button>
+            <button onclick="switchSettingsTab('security')" id="tab-btn-security" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-muted hover:text-main border-b-2 border-transparent transition">Security</button>
+            <button onclick="switchSettingsTab('danger')" id="tab-btn-danger" class="flex-1 py-3 text-xs font-bold uppercase tracking-wider text-red-500 hover:text-red-400 border-b-2 border-transparent transition">Danger</button>
         </div>
 
         <div class="p-5 overflow-y-auto max-h-[460px]">
             <!-- Theme Tab -->
             <div id="tab-content-theme" class="settings-tab-content block space-y-3">
-                <h3 class="text-sm font-semibold opacity-90">Select Color Theme</h3>
+                <h3 class="text-sm font-bold text-main">Select Color Theme</h3>
                 <div class="grid grid-cols-2 gap-2.5">
-                    <button onclick="applyTheme('theme-liquid-dark')" data-theme="theme-liquid-dark" class="p-3 text-xs font-semibold rounded-lg border border-white/20 bg-[#0b0f19] text-white hover:border-cyan-400 transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                    <button onclick="applyTheme('theme-liquid-dark')" data-theme="theme-liquid-dark" class="p-3 text-xs font-bold rounded-lg border border-slate-700 bg-[#0b0f19] text-white hover:border-cyan-400 transition flex flex-col items-center gap-1.5 shadow-sm">
                         <span class="w-3 h-3 rounded-full bg-cyan-400"></span>
                         Liquid Dark
                     </button>
-                    <button onclick="applyTheme('theme-liquid-light')" data-theme="theme-liquid-light" class="p-3 text-xs font-semibold rounded-lg border border-black/10 bg-[#f1f5f9] text-slate-800 hover:border-blue-500 transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                    <button onclick="applyTheme('theme-liquid-light')" data-theme="theme-liquid-light" class="p-3 text-xs font-bold rounded-lg border border-slate-300 bg-[#ffffff] text-slate-900 hover:border-blue-500 transition flex flex-col items-center gap-1.5 shadow-sm">
                         <span class="w-3 h-3 rounded-full bg-blue-600"></span>
                         Liquid Light
                     </button>
-                    <button onclick="applyTheme('theme-solarized-dark')" data-theme="theme-solarized-dark" class="p-3 text-xs font-semibold rounded-lg border border-white/10 bg-[#002b36] text-[#839496] hover:border-[#2aa198] transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                    <button onclick="applyTheme('theme-solarized-dark')" data-theme="theme-solarized-dark" class="p-3 text-xs font-bold rounded-lg border border-slate-700 bg-[#002b36] text-[#93a1a1] hover:border-[#2aa198] transition flex flex-col items-center gap-1.5 shadow-sm">
                         <span class="w-3 h-3 rounded-full bg-[#2aa198]"></span>
                         Solar Dark
                     </button>
-                    <button onclick="applyTheme('theme-solarized-light')" data-theme="theme-solarized-light" class="p-3 text-xs font-semibold rounded-lg border border-black/10 bg-[#fdf6e3] text-[#586e75] hover:border-[#268bd2] transition-all flex flex-col items-center gap-1.5 shadow-sm">
+                    <button onclick="applyTheme('theme-solarized-light')" data-theme="theme-solarized-light" class="p-3 text-xs font-bold rounded-lg border border-slate-300 bg-[#eee8d5] text-[#073642] hover:border-[#268bd2] transition flex flex-col items-center gap-1.5 shadow-sm">
                         <span class="w-3 h-3 rounded-full bg-[#268bd2]"></span>
                         Solar Light
                     </button>
@@ -153,32 +153,32 @@
 
             <!-- Profile Tab -->
             <div id="tab-content-profile" class="settings-tab-content hidden space-y-4">
-                <h3 class="text-sm font-semibold opacity-90">Update Email Address</h3>
+                <h3 class="text-sm font-bold text-main">Update Email Address</h3>
                 <form id="update-email-form" class="space-y-3.5" onsubmit="updateEmail(event)">
                     <div id="email-step-1">
-                        <label class="block text-xs font-medium opacity-80 mb-1">New Email</label>
+                        <label class="block text-xs font-bold text-muted mb-1">New Email</label>
                         <div class="space-y-2">
-                            <input type="email" id="new-email" required class="w-full px-3.5 py-2 glass-input rounded-lg text-sm" placeholder="new.email@example.com">
-                            <button type="button" id="btn-send-email-otp" onclick="sendEmailUpdateOtp()" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg text-xs transition-colors shadow flex items-center justify-center">
+                            <input type="email" id="new-email" required class="w-full px-3.5 py-2 glass-input rounded-lg text-sm font-medium" placeholder="new.email@example.com">
+                            <button type="button" id="btn-send-email-otp" onclick="sendEmailUpdateOtp()" class="w-full py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-xs transition shadow flex items-center justify-center">
                                 <span id="btn-send-email-otp-text">Send OTP to New Email</span>
                             </button>
                         </div>
                     </div>
 
-                    <div id="email-step-2" class="hidden space-y-3.5 border-t border-white/10 pt-3">
+                    <div id="email-step-2" class="hidden space-y-3.5 border-t pt-3">
                         <div>
                             <div class="flex justify-between items-center mb-1">
-                                <label class="block text-xs font-medium opacity-80">6-Digit OTP Code</label>
-                                <button type="button" onclick="sendEmailUpdateOtp()" class="text-[11px] text-purple-400 hover:underline">Resend</button>
+                                <label class="block text-xs font-bold text-muted">6-Digit OTP Code</label>
+                                <button type="button" onclick="sendEmailUpdateOtp()" class="text-xs text-code font-bold hover:underline">Resend</button>
                             </div>
-                            <input type="text" id="email-otp" maxlength="6" class="w-full px-3.5 py-2 glass-input rounded-lg text-sm font-mono text-center tracking-widest" placeholder="123456">
-                            <p class="text-[11px] opacity-60 mt-1">Sent to new email. Valid for 10 minutes.</p>
+                            <input type="text" id="email-otp" maxlength="6" class="w-full px-3.5 py-2 glass-input rounded-lg text-sm font-mono text-center tracking-widest font-bold" placeholder="123456">
+                            <p class="text-[11px] text-muted mt-1 font-medium">Sent to new email. Valid for 10 minutes.</p>
                         </div>
                         <div>
-                            <label class="block text-xs font-medium opacity-80 mb-1">Current Password</label>
+                            <label class="block text-xs font-bold text-muted mb-1">Current Password</label>
                             <input type="password" id="email-password" class="w-full px-3.5 py-2 glass-input rounded-lg text-sm" placeholder="••••••••">
                         </div>
-                        <button type="submit" id="btn-confirm-email" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg text-sm transition-colors shadow flex items-center justify-center">
+                        <button type="submit" id="btn-confirm-email" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-sm transition shadow flex items-center justify-center cursor-pointer">
                             <span id="btn-confirm-email-text">Confirm Email Update</span>
                         </button>
                     </div>
@@ -187,33 +187,33 @@
 
             <!-- Security Tab -->
             <div id="tab-content-security" class="settings-tab-content hidden space-y-4">
-                <h3 class="text-sm font-semibold opacity-90">Change Password</h3>
+                <h3 class="text-sm font-bold text-main">Change Password</h3>
                 <form id="update-password-form" class="space-y-3.5" onsubmit="updatePassword(event)">
                     <div>
-                        <label class="block text-xs font-medium opacity-80 mb-1">New Password</label>
+                        <label class="block text-xs font-bold text-muted mb-1">New Password</label>
                         <input type="password" id="new-password" required minlength="6" class="w-full px-3.5 py-2 glass-input rounded-lg text-sm" placeholder="••••••••">
-                        <p class="text-[11px] opacity-60 mt-1">Min. 6 chars with letters, numbers & special characters.</p>
+                        <p class="text-[11px] text-muted mt-1 font-medium">Min. 6 chars with letters, numbers & special characters.</p>
                     </div>
                     <div>
-                        <label class="block text-xs font-medium opacity-80 mb-1">Current Password</label>
+                        <label class="block text-xs font-bold text-muted mb-1">Current Password</label>
                         <input type="password" id="password-password" required class="w-full px-3.5 py-2 glass-input rounded-lg text-sm">
                     </div>
-                    <button type="submit" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-medium rounded-lg text-sm transition-colors shadow">Update Password</button>
+                    <button type="submit" class="w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-lg text-sm transition shadow cursor-pointer">Update Password</button>
                 </form>
             </div>
 
             <!-- Danger Tab -->
             <div id="tab-content-danger" class="settings-tab-content hidden space-y-4">
                 <div>
-                    <h3 class="text-sm font-semibold text-red-400">Delete Account</h3>
-                    <p class="text-xs opacity-70 mt-1">This permanently removes your account and all associated API keys.</p>
+                    <h3 class="text-sm font-bold text-red-500">Delete Account</h3>
+                    <p class="text-xs text-muted mt-1 font-medium">This permanently removes your account and all associated proxy endpoints.</p>
                 </div>
                 <form id="delete-account-form" class="space-y-3.5" onsubmit="deleteAccount(event)">
                     <div>
-                        <label class="block text-xs font-medium text-red-400 mb-1">Confirm with Password</label>
-                        <input type="password" id="delete-password" required class="w-full px-3.5 py-2 glass-input !border-red-500/40 rounded-lg text-sm">
+                        <label class="block text-xs font-bold text-red-500 mb-1">Confirm with Password</label>
+                        <input type="password" id="delete-password" required class="w-full px-3.5 py-2 glass-input !border-red-500/50 rounded-lg text-sm">
                     </div>
-                    <button type="submit" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg text-sm transition-colors shadow">Delete My Account</button>
+                    <button type="submit" class="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-sm transition shadow cursor-pointer">Delete My Account</button>
                 </form>
             </div>
         </div>
@@ -223,7 +223,6 @@
     <script src="/app.js"></script>
     <script src="/admin.js"></script>
     <script>
-        // Simple auth bootstrap
         const userStr = localStorage.getItem('user');
         if (!localStorage.getItem('token') || !userStr) {
             window.location.href = '/';

@@ -7,8 +7,8 @@ function showAlert(msg, isError = false) {
     if (!box || !msgEl) return;
     
     msgEl.textContent = msg;
-    box.className = `rounded-xl p-4 mb-4 text-sm font-medium shadow-lg transition-all duration-300 transform translate-y-0 opacity-100 ${
-        isError ? 'bg-red-900/60 text-red-200 border border-red-500/50' : 'bg-green-900/60 text-green-200 border border-green-500/50'
+    box.className = `rounded-xl p-4 mb-4 text-sm font-bold shadow-lg transition-all duration-300 transform translate-y-0 opacity-100 ${
+        isError ? 'badge-status-429' : 'badge-status-200'
     }`;
     box.classList.remove('hidden');
 
@@ -53,36 +53,30 @@ async function fetchConfigs() {
         
         data.configs.forEach(config => {
             const el = document.createElement('div');
-            el.className = 'glass-panel p-6 flex flex-col space-y-4 relative border border-white/10 hover:border-purple-400/40 transition-colors duration-300';
+            el.className = 'glass-panel p-6 flex flex-col space-y-4 relative transition-colors duration-300';
             
-            // Badge for tier
-            const badgeColor = config.tierName === 'PRO' 
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' 
-                : 'bg-blue-500/20 text-blue-300 border-blue-500/40';
+            const badgeClass = config.tierName === 'PRO' 
+                ? 'badge-status-warn' 
+                : 'badge-status-active';
             
             el.innerHTML = `
                 <div class="flex justify-between items-center mb-1">
-                    <h3 class="font-bold text-lg tracking-tight">${config.tierName} Tier</h3>
-                    <span class="px-3 py-1 text-xs font-bold rounded-full border ${badgeColor}">${config.tierName}</span>
+                    <h3 class="font-bold text-lg tracking-tight text-main">${config.tierName} Tier</h3>
+                    <span class="px-3 py-1 text-xs font-bold rounded-full border ${badgeClass}">${config.tierName}</span>
                 </div>
                 
                 <div class="space-y-4 flex-grow">
                     <div>
-                        <label class="block text-xs font-semibold opacity-75 uppercase tracking-wider mb-1.5">Max Requests</label>
-                        <input type="number" id="limit-${config.id}" value="${config.requestLimit}" class="w-full glass-input rounded-lg px-3.5 py-2 text-sm">
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-1.5 text-main">Max Tier Rate Limit (req/min)</label>
+                        <input type="number" id="limit-${config.id}" value="${config.maxTierLimit}" class="w-full glass-input rounded-lg px-3.5 py-2 text-sm font-bold">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold opacity-75 uppercase tracking-wider mb-1.5">Time Window (ms)</label>
-                        <input type="number" id="window-${config.id}" value="${config.windowMs}" class="w-full glass-input rounded-lg px-3.5 py-2 text-sm">
-                        <p class="text-xs opacity-50 mt-1">${config.windowMs / 1000} seconds</p>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold opacity-75 uppercase tracking-wider mb-1.5">Max API Keys</label>
-                        <input type="number" id="keys-${config.id}" value="${config.maxApiKeys || 2}" class="w-full glass-input rounded-lg px-3.5 py-2 text-sm">
+                        <label class="block text-xs font-bold uppercase tracking-wider mb-1.5 text-main">Max Allowed Proxy Endpoints</label>
+                        <input type="number" id="endpoints-${config.id}" value="${config.maxEndpoints || 3}" class="w-full glass-input rounded-lg px-3.5 py-2 text-sm font-bold">
                     </div>
                 </div>
                 
-                <button onclick="updateConfig('${config.id}')" class="mt-4 w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-sm font-semibold rounded-lg transition-colors shadow-lg flex justify-center items-center">
+                <button onclick="updateConfig('${config.id}')" class="mt-4 w-full py-2.5 bg-primary hover:bg-primary-hover text-white text-sm font-bold rounded-lg transition-colors shadow-lg flex justify-center items-center cursor-pointer">
                     <span>Save Changes</span>
                 </button>
             `;
@@ -94,21 +88,20 @@ async function fetchConfigs() {
 }
 
 async function updateConfig(id) {
-    const limit = document.getElementById(`limit-${id}`).value;
-    const windowMs = document.getElementById(`window-${id}`).value;
-    const maxApiKeys = document.getElementById(`keys-${id}`).value;
+    const maxTierLimit = document.getElementById(`limit-${id}`).value;
+    const maxEndpoints = document.getElementById(`endpoints-${id}`).value;
     
     try {
         const res = await fetch(`${ADMIN_API_URL}/config/tiers/${id}`, {
             method: 'PATCH',
             headers: getAuthHeaders(),
-            body: JSON.stringify({ requestLimit: limit, windowMs, maxApiKeys })
+            body: JSON.stringify({ maxTierLimit, maxEndpoints })
         });
         
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to update tier');
         
-        showAlert('Tier configuration updated successfully. Changes take up to 5 mins.');
+        showAlert('Tier configuration updated successfully.');
         fetchConfigs();
     } catch (error) {
         showAlert(error.message, true);
@@ -136,7 +129,7 @@ async function fetchUsers() {
         tbody.innerHTML = '';
         
         if (data.users.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center opacity-60 text-sm">No users found.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-muted font-medium text-sm">No users found.</td></tr>`;
             return;
         }
         
@@ -144,42 +137,42 @@ async function fetchUsers() {
             const tr = document.createElement('tr');
             
             const isBanned = u.isBanned;
-            const rowClass = isBanned ? 'bg-red-950/20 opacity-80' : 'hover:bg-white/5 transition-colors';
+            const rowClass = isBanned ? 'badge-status-429' : 'transition-colors';
             tr.className = rowClass;
             
             const banBtnClass = isBanned 
-                ? 'bg-slate-700 hover:bg-slate-600 text-white' 
-                : 'bg-red-900/40 hover:bg-red-900/80 text-red-300 border border-red-800/50';
+                ? 'btn-action-copy font-bold' 
+                : 'btn-action-delete font-bold';
                 
             const banBtnText = isBanned ? 'Unban User' : 'Ban User';
             
             tr.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-black/20 flex items-center justify-center opacity-80 border border-white/10 font-bold">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full badge-quota flex items-center justify-center font-bold text-sm">
                             ${u.email.charAt(0).toUpperCase()}
                         </div>
                         <div class="ml-4">
-                            <div class="text-sm font-medium ${isBanned ? 'line-through text-red-400' : ''}">${u.email}</div>
-                            <div class="text-xs opacity-50 font-mono" title="${u.id}">ID: ${u.id.substring(0,8)}...</div>
+                            <div class="text-sm font-bold text-main ${isBanned ? 'line-through text-red-500' : ''}">${u.email}</div>
+                            <div class="text-xs text-muted font-mono font-medium" title="${u.id}">ID: ${u.id.substring(0,8)}...</div>
                         </div>
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm font-semibold mb-1 opacity-90">${u.role}</div>
-                    <div class="text-xs opacity-60 flex items-center">
-                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                        ${u.apiKeysCount} Keys
+                    <div class="text-sm font-bold mb-1 text-main">${u.role}</div>
+                    <div class="text-xs text-muted flex items-center font-medium">
+                        <svg class="w-3.5 h-3.5 mr-1 text-code" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        ${u.endpointsCount || 0} Endpoints
                     </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                    <select onchange="updateRole('${u.id}', this.value)" class="glass-input text-xs rounded-md block p-1.5 cursor-pointer font-semibold outline-none mb-1.5" ${isBanned ? 'disabled' : ''}>
-                        <option value="USER" ${u.role === 'USER' ? 'selected' : ''} class="bg-slate-800 text-white">USER</option>
-                        <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''} class="bg-slate-800 text-white">ADMIN</option>
+                    <select onchange="updateRole('${u.id}', this.value)" class="glass-input text-xs rounded-lg block px-2.5 py-1.5 cursor-pointer font-bold outline-none mb-1.5" ${isBanned ? 'disabled' : ''}>
+                        <option value="USER" ${u.role === 'USER' ? 'selected' : ''}>USER</option>
+                        <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>ADMIN</option>
                     </select>
-                    <select onchange="updateTier('${u.id}', this.value)" class="glass-input text-xs rounded-md block p-1.5 cursor-pointer font-semibold outline-none ${u.tier === 'PRO' ? 'text-amber-400 font-bold' : ''}" ${isBanned ? 'disabled' : ''}>
-                        <option value="FREE" ${u.tier === 'FREE' ? 'selected' : ''} class="bg-slate-800 text-white">FREE</option>
-                        <option value="PRO" ${u.tier === 'PRO' ? 'selected' : ''} class="bg-slate-800 text-white">PRO</option>
+                    <select onchange="updateTier('${u.id}', this.value)" class="glass-input text-xs rounded-lg block px-2.5 py-1.5 cursor-pointer font-bold outline-none" ${isBanned ? 'disabled' : ''}>
+                        <option value="FREE" ${u.tier === 'FREE' ? 'selected' : ''}>FREE PLAN</option>
+                        <option value="PRO" ${u.tier === 'PRO' ? 'selected' : ''}>PRO PLAN</option>
                     </select>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

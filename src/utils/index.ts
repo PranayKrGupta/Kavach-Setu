@@ -4,3 +4,4 @@ export * from './asyncHandler';
 export * from './passwordValidator';
 export * from './adminGuard';
 export * from './otp';
+export * from './ssrfValidator';

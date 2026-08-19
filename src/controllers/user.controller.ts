@@ -175,7 +175,7 @@ export async function deleteAccount(req: AuthenticatedRequest, res: Response): P
   await checkLastAdmin(userId);
 
   await prisma.$transaction([
-    prisma.apiKey.deleteMany({ where: { userId } }),
+    prisma.proxyEndpoint.deleteMany({ where: { userId } }),
     prisma.user.delete({ where: { id: userId } })
   ]);
 

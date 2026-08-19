@@ -24,12 +24,12 @@ export interface FormattedUser {
   role: Role;
   isBanned: boolean;
   createdAt: Date;
-  apiKeysCount: number;
+  endpointsCount: number;
 }
 
 export interface TierConfigCache {
-  requestLimit: number;
-  windowMs: number;
+  maxEndpoints: number;
+  maxTierLimit: number;
   expiresAt: number;
 }
 

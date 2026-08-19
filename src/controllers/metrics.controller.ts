@@ -6,40 +6,42 @@ import { AppError } from '../utils/appError';
 import { ApiResponse } from '../utils/apiResponse';
 
 /**
- * GET /api/metrics: Fetch 5-hour usage metrics
+ * GET /api/metrics: Fetch 5-hour usage metrics for user's proxy endpoints
  */
 export async function getMetrics(req: AuthenticatedRequest, res: Response): Promise<void> {
   const userId = req.user?.userId;
   if (!userId) throw new AppError('Unauthorized', 401);
 
-  const { apiKeyId } = req.query;
+  const { endpointId, proxySlug } = req.query;
 
-  const apiKeys = await prisma.apiKey.findMany({
+  const endpoints = await prisma.proxyEndpoint.findMany({
     where: { userId },
-    select: { id: true }
+    select: { id: true, proxySlug: true }
   });
-  const keyIds = apiKeys.map(k => k.id);
+  const allSlugs = endpoints.map(e => e.proxySlug);
 
-  if (keyIds.length === 0) {
+  if (allSlugs.length === 0) {
     ApiResponse.success(res, { data: [] });
     return;
   }
 
-  let targetKeyIds = keyIds;
-  if (apiKeyId && typeof apiKeyId === 'string' && apiKeyId !== 'ALL') {
-    if (!keyIds.includes(apiKeyId)) {
-      throw new AppError('Unauthorized key access', 403);
+  let targetSlugs = allSlugs;
+  const filterKey = (endpointId || proxySlug) as string | undefined;
+  if (filterKey && typeof filterKey === 'string' && filterKey !== 'ALL') {
+    const matched = endpoints.find(e => e.id === filterKey || e.proxySlug === filterKey);
+    if (!matched) {
+      throw new AppError('Unauthorized endpoint access', 403);
     }
-    targetKeyIds = [apiKeyId];
+    targetSlugs = [matched.proxySlug];
   }
 
   const fiveHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
 
   const logs = await RequestLog.find({
-    apiKeyId: { $in: targetKeyIds },
+    proxySlug: { $in: targetSlugs },
     timestamp: { $gte: fiveHoursAgo }
   })
-    .select('status timestamp apiKeyId')
+    .select('status timestamp proxySlug')
     .sort({ timestamp: 1 })
     .lean();
 

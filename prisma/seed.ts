@@ -30,8 +30,8 @@ async function main() {
 
   // 2. Clear old PostgreSQL data
   console.log('Clearing PostgreSQL data...');
-  const deletedKeys = await prisma.apiKey.deleteMany({});
-  console.log(`Deleted ${deletedKeys.count} old API keys.`);
+  const deletedEndpoints = await prisma.proxyEndpoint.deleteMany({});
+  console.log(`Deleted ${deletedEndpoints.count} old proxy endpoints.`);
 
   const deletedUsers = await prisma.user.deleteMany({});
   console.log(`Deleted ${deletedUsers.count} old users.`);
@@ -39,21 +39,19 @@ async function main() {
   const deletedTiers = await prisma.tierConfig.deleteMany({});
   console.log(`Deleted ${deletedTiers.count} old tier configs.`);
 
-  // 3. Seed fresh Dynamic Tier Configurations as per current policies
+  // 3. Seed fresh Dynamic Tier Configurations
   console.log('Seeding fresh tier configurations...');
   await prisma.tierConfig.createMany({
     data: [
       {
         tierName: 'FREE',
-        requestLimit: 60,
-        windowMs: 60000, // 1 minute
-        maxApiKeys: 2
+        maxEndpoints: 3,
+        maxTierLimit: 60
       },
       {
         tierName: 'PRO',
-        requestLimit: 1000,
-        windowMs: 60000, // 1 minute
-        maxApiKeys: 5
+        maxEndpoints: 10,
+        maxTierLimit: 1000
       }
     ]
   });

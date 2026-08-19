@@ -158,7 +158,7 @@ export async function login(req: Request, res: Response): Promise<void> {
  */
 export async function getPublicTiers(_req: Request, res: Response): Promise<void> {
   const configs = await prisma.tierConfig.findMany({
-    orderBy: { requestLimit: 'asc' }
+    orderBy: { maxTierLimit: 'asc' }
   });
 
   ApiResponse.success(res, { configs });

@@ -123,3 +123,6 @@ dist
 
 # GitGuardian cache
 .cache_ggshield
+
+# Personal Documentation
+KAVACH_SETU_GUIDE.md
