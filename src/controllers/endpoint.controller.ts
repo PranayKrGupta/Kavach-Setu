@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { prisma } from '../config/database';
 import { AuthenticatedRequest } from '../types';
 import { RequestLog } from '../models/RequestLog';
+import { rateLimiter } from '../services/rateLimiter';
 import { AppError, ApiResponse, validateSafeTargetUrl } from '../utils';
 
 /**
@@ -167,6 +168,8 @@ export async function toggleEndpointActive(req: AuthenticatedRequest, res: Respo
     data: { active: !endpoint.active }
   });
 
+  rateLimiter.reset(endpoint.proxySlug);
+
   ApiResponse.success(
     res,
     { endpoint: updated },
@@ -195,6 +198,8 @@ export async function deleteEndpoint(req: AuthenticatedRequest, res: Response): 
   await prisma.proxyEndpoint.delete({
     where: { id }
   });
+
+  rateLimiter.reset(endpoint.proxySlug);
 
   // Background cleanup of MongoDB request logs
   RequestLog.deleteMany({ proxySlug: endpoint.proxySlug }).catch(() => {});

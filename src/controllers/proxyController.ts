@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { RequestLog } from '../models/RequestLog';
+import { rateLimiter } from '../services/rateLimiter';
 import { validateSafeTargetUrl } from '../utils/ssrfValidator';
 
 const EXCLUDED_HEADERS = new Set([
@@ -60,18 +61,12 @@ export async function handleProxyRequest(req: Request, res: Response): Promise<v
       return;
     }
 
-    // 2. Sliding Window Rate Limiting Logic via MongoDB
-    const now = Date.now();
+    // 2. Atomic In-Memory Sliding Window Rate Limiting Check
     const windowMs = endpoint.windowMs || 60000;
-    const windowStart = new Date(now - windowMs);
+    const rateCheck = rateLimiter.checkAndConsume(cleanSlug, endpoint.customRateLimit, windowMs);
 
-    const requestCount = await RequestLog.countDocuments({
-      proxySlug: cleanSlug,
-      timestamp: { $gte: windowStart }
-    });
-
-    if (requestCount >= endpoint.customRateLimit) {
-      // Record rate-limited 429 attempt in background
+    if (!rateCheck.allowed) {
+      // Record rate-limited 429 attempt in background to MongoDB
       RequestLog.create({
         proxySlug: cleanSlug,
         endpoint: req.originalUrl,
@@ -80,17 +75,17 @@ export async function handleProxyRequest(req: Request, res: Response): Promise<v
         timestamp: new Date()
       }).catch(() => {});
 
-      const remainingSecs = Math.ceil(windowMs / 1000);
+      const remainingSecs = Math.max(1, Math.ceil(rateCheck.resetMs / 1000));
       res.setHeader('Retry-After', remainingSecs.toString());
-      res.setHeader('X-RateLimit-Limit', endpoint.customRateLimit.toString());
+      res.setHeader('X-RateLimit-Limit', rateCheck.limit.toString());
       res.setHeader('X-RateLimit-Remaining', '0');
-      res.setHeader('X-RateLimit-Reset', new Date(now + windowMs).toISOString());
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateCheck.resetMs).toISOString());
 
       res.status(429).json({
         error: 'Too Many Requests',
-        message: `Rate limit of ${endpoint.customRateLimit} req/${remainingSecs}s exceeded.`,
-        limit: endpoint.customRateLimit,
-        windowSeconds: remainingSecs
+        message: `Rate limit of ${rateCheck.limit} req/${Math.round(windowMs / 1000)}s exceeded. Try again in ${remainingSecs}s.`,
+        limit: rateCheck.limit,
+        windowSeconds: Math.round(windowMs / 1000)
       });
       return;
     }
@@ -163,7 +158,7 @@ export async function handleProxyRequest(req: Request, res: Response): Promise<v
 
       const status = targetResponse.status;
 
-      // Asynchronously log the successful request
+      // Asynchronously log the successful request to MongoDB
       RequestLog.create({
         proxySlug: cleanSlug,
         endpoint: req.originalUrl,
@@ -180,8 +175,9 @@ export async function handleProxyRequest(req: Request, res: Response): Promise<v
         }
       });
 
-      res.setHeader('X-RateLimit-Limit', endpoint.customRateLimit.toString());
-      res.setHeader('X-RateLimit-Remaining', Math.max(0, endpoint.customRateLimit - (requestCount + 1)).toString());
+      res.setHeader('X-RateLimit-Limit', rateCheck.limit.toString());
+      res.setHeader('X-RateLimit-Remaining', rateCheck.remaining.toString());
+      res.setHeader('X-RateLimit-Reset', new Date(Date.now() + rateCheck.resetMs).toISOString());
 
       const responseBuffer = await targetResponse.arrayBuffer();
       res.status(status).send(Buffer.from(responseBuffer));
