@@ -136,6 +136,13 @@ export async function login(req: Request, res: Response): Promise<void> {
     throw new AppError('Invalid credentials', 400);
   }
 
+  if (!user.passwordHash) {
+    throw new AppError(
+      'This account was created with Google Sign-In. Please click "Continue with Google" to sign in.',
+      400
+    );
+  }
+
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     throw new AppError('Invalid credentials', 400);
@@ -154,6 +161,111 @@ export async function login(req: Request, res: Response): Promise<void> {
 }
 
 /**
+ * Direct Google Authentication (Login & Register)
+ * POST /api/auth/google
+ */
+export async function googleAuth(req: Request, res: Response): Promise<void> {
+  const { credential } = req.body;
+  if (!credential || typeof credential !== 'string') {
+    throw new AppError('Google credential token is required', 400);
+  }
+
+  let googlePayload: {
+    sub?: string;
+    email?: string;
+    email_verified?: boolean | string;
+    name?: string;
+    picture?: string;
+    aud?: string;
+  };
+
+  try {
+    const verifyUrl = `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`;
+    const verifyRes = await fetch(verifyUrl);
+    if (!verifyRes.ok) {
+      const errBody = (await verifyRes.json().catch(() => ({}))) as { error_description?: string };
+      throw new Error(errBody.error_description || 'Failed to verify Google credential');
+    }
+    googlePayload = await verifyRes.json();
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Token verification failed';
+    throw new AppError(`Google authentication failed: ${message}`, 401);
+  }
+
+  const { sub: googleId, email, email_verified } = googlePayload;
+
+  if (!email || (email_verified !== true && email_verified !== 'true')) {
+    throw new AppError('Google account email is not verified', 400);
+  }
+
+  if (env.GOOGLE_CLIENT_ID && googlePayload.aud && googlePayload.aud !== env.GOOGLE_CLIENT_ID) {
+    throw new AppError('Google client ID verification mismatch', 401);
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  let user = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { email: normalizedEmail },
+        ...(googleId ? [{ googleId }] : [])
+      ]
+    }
+  });
+
+  if (user) {
+    if (user.isBanned) {
+      throw new AppError('Your account is suspended. Please contact support.', 403);
+    }
+
+    // Link googleId if not linked yet
+    if (!user.googleId && googleId) {
+      user = await prisma.user.update({
+        where: { id: user.id },
+        data: { googleId, authProvider: 'GOOGLE' }
+      });
+    }
+  } else {
+    // Register new user automatically with FREE tier
+    user = await prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        googleId,
+        authProvider: 'GOOGLE',
+        tier: 'FREE',
+        role: 'USER'
+      }
+    });
+  }
+
+  const token = jwt.sign(
+    { userId: user.id, email: user.email },
+    env.JWT_SECRET,
+    { expiresIn: '24h' }
+  );
+
+  ApiResponse.success(
+    res,
+    {
+      token,
+      user: { id: user.id, email: user.email, tier: user.tier, role: user.role }
+    },
+    200,
+    'Authenticated successfully with Google'
+  );
+}
+
+/**
+ * Fetch Public Auth Configuration (e.g. Google Client ID)
+ * GET /api/auth/config
+ */
+export async function getAuthConfig(_req: Request, res: Response): Promise<void> {
+  ApiResponse.success(res, {
+    googleClientId: env.GOOGLE_CLIENT_ID || ''
+  });
+}
+
+/**
  * Fetch Public Tiers
  */
 export async function getPublicTiers(_req: Request, res: Response): Promise<void> {
@@ -163,3 +275,4 @@ export async function getPublicTiers(_req: Request, res: Response): Promise<void
 
   ApiResponse.success(res, { configs });
 }
+
