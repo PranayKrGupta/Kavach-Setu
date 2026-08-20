@@ -44,7 +44,7 @@ app.use('/api/metrics', metricsRoutes);
 app.use('/api/data', dataRoutes);
 app.use('/api/admin', adminRoutes);
 
-// Health check endpoint for Render / cloud monitoring
+// Health check endpoint for cloud monitoring & uptime probes
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', version: '2.0.0', timestamp: new Date().toISOString() });
 });

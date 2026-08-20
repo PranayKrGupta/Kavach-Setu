@@ -141,6 +141,10 @@ export async function login(req: Request, res: Response): Promise<void> {
     throw new AppError('Invalid credentials', 400);
   }
 
+  if (user.isBanned) {
+    throw new AppError('Your account has been suspended. Please contact administrator.', 403);
+  }
+
   const token = jwt.sign(
     { userId: user.id, email: user.email },
     env.JWT_SECRET,

@@ -5,18 +5,6 @@ interface RequestBucket {
   resetTime: number;
 }
 
-const ipBuckets = new Map<string, RequestBucket>();
-
-// Periodic cleanup of stale buckets every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, bucket] of ipBuckets.entries()) {
-    if (now > bucket.resetTime) {
-      ipBuckets.delete(ip);
-    }
-  }
-}, 5 * 60 * 1000);
-
 /**
  * Creates an in-memory sliding rate limiter middleware for sensitive auth routes
  * @param maxRequests Maximum allowed requests per window
@@ -28,6 +16,22 @@ export function createAuthRateLimiter(
   windowMs: number = 60000,
   actionName: string = 'requests'
 ) {
+  const ipBuckets = new Map<string, RequestBucket>();
+
+  // Periodic cleanup of stale buckets every 5 minutes
+  const cleanupTimer = setInterval(() => {
+    const now = Date.now();
+    for (const [ip, bucket] of ipBuckets.entries()) {
+      if (now > bucket.resetTime) {
+        ipBuckets.delete(ip);
+      }
+    }
+  }, 5 * 60 * 1000);
+
+  if (cleanupTimer.unref) {
+    cleanupTimer.unref();
+  }
+
   return (req: Request, res: Response, next: NextFunction): void => {
     const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || req.socket.remoteAddress || 'unknown-ip';
     const now = Date.now();

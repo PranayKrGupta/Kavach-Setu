@@ -10,7 +10,7 @@ export const connectMongo = async (): Promise<void> => {
     try {
       dns.setServers(['8.8.8.8', '8.8.4.4']);
     } catch {
-      // Ignore DNS server override errors on containerized cloud runtimes (e.g. Render)
+      // Ignore DNS server override errors on containerized cloud runtimes
     }
 
     await mongoose.connect(env.MONGO_URI);

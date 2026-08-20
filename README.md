@@ -1,5 +1,7 @@
 # Kavach Setu v2.0: Developer API Reverse Proxy & Gatekeeper Portal
 
+> 🚀 **Live Demo:** [https://kavach-setu.onrender.com](https://kavach-setu.onrender.com)
+
 Kavach Setu is a production-grade, modular **API Reverse Proxy, Rate-Limiting Gatekeeper, and Telemetry Portal**. It allows developers to shield their backend APIs by defining custom rate limits, routing traffic through unique proxy links, inspecting live request telemetry, and running real-time traffic stress tests.
 
 ---
@@ -67,20 +69,11 @@ EMAILJS_PRIVATE_KEY=your_private_key
 
 ---
 
-## 🌐 Deploy to Render
+## 🌐 Live Deployment
 
-Kavach Setu is fully optimized for **Render's Free Tier**:
+Access the live production instance of Kavach Setu:
 
-### Option 1: Automatic Blueprint (Recommended)
-1. Go to [Render Dashboard](https://dashboard.render.com/) > **New +** > **Blueprint**.
-2. Connect your repository.
-3. Render reads `render.yaml` and deploys the web service with health check monitoring at `/health`.
-4. Enter environment variables (`DATABASE_URL`, `MONGO_URI`, `JWT_SECRET`) and deploy.
-
-### Option 2: Manual Web Service
-- **Build Command:** `npm install && npm run build && npx prisma db push`
-- **Start Command:** `npm start`
-- **Health Check Path:** `/health`
+🔗 **[https://kavach-setu.onrender.com](https://kavach-setu.onrender.com)**
 
 ---
 
@@ -140,7 +133,6 @@ Kavach Setu is fully optimized for **Render's Free Tier**:
 │   ├── types/              # Centralized TypeScript types
 │   ├── utils/              # SSRF validator, error handlers, response wrappers
 │   └── index.ts            # Server entry point & security headers
-├── render.yaml             # Render deployment blueprint
 ├── package.json            # Version 2.0.0 dependencies & scripts
 └── tsconfig.json           # TypeScript configuration
 ```
